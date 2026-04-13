@@ -8,7 +8,7 @@ import com.unscientificjszhai.mcpshortcuts.data.database.dao.ToolCallHistoryDao
 import com.unscientificjszhai.mcpshortcuts.data.database.entity.PinnedToolEntity
 import com.unscientificjszhai.mcpshortcuts.data.database.entity.ToolCallHistoryEntity
 import com.unscientificjszhai.mcpshortcuts.mcp.McpConnectionManager
-import com.unscientificjszhai.mcpshortcuts.ui.ToolCallState
+import com.unscientificjszhai.mcpshortcuts.ui.main.ToolCallState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

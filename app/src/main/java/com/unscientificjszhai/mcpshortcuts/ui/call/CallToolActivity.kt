@@ -1,4 +1,4 @@
-package com.unscientificjszhai.mcpshortcuts.ui
+package com.unscientificjszhai.mcpshortcuts.ui.call
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -13,11 +13,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -35,6 +34,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -45,11 +45,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.google.gson.Gson
-import com.google.gson.JsonObject
-import com.google.gson.JsonSyntaxException
+import androidx.compose.ui.res.stringResource
+import com.unscientificjszhai.mcpshortcuts.R
 import com.unscientificjszhai.mcpshortcuts.data.ToolInputSchema
 import com.unscientificjszhai.mcpshortcuts.data.database.entity.ToolCacheEntity
+import com.unscientificjszhai.mcpshortcuts.ui.main.ToolCallState
 import com.unscientificjszhai.mcpshortcuts.ui.theme.McpShortcutsTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.serialization.json.Json
@@ -74,7 +74,7 @@ fun CallToolScreen(viewModel: CallToolViewModel = viewModel(), onBack: () -> Uni
     val toolCallState by viewModel.toolCallState.collectAsState()
     
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Parsed", "JSON")
+    val tabs = listOf(stringResource(R.string.tab_parsed), stringResource(R.string.tab_json))
 
     var jsonInput by remember { mutableStateOf("{}") }
     val parsedArguments = remember { mutableStateOf<Map<String, Any?>>(mapOf()) }
@@ -82,7 +82,7 @@ fun CallToolScreen(viewModel: CallToolViewModel = viewModel(), onBack: () -> Uni
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = tool?.name ?: "Call Tool") },
+                title = { Text(text = tool?.name ?: stringResource(R.string.call_tool)) },
                 // 添加颜色配置以匹配系统 UI（状态栏区域）的深色/浅色模式
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -92,7 +92,7 @@ fun CallToolScreen(viewModel: CallToolViewModel = viewModel(), onBack: () -> Uni
                 ),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 }
             )
@@ -111,7 +111,7 @@ fun CallToolScreen(viewModel: CallToolViewModel = viewModel(), onBack: () -> Uni
                     .padding(16.dp),
                 enabled = tool != null && toolCallState !is ToolCallState.Loading
             ) {
-                Text("Call Tool")
+                Text(stringResource(R.string.call_tool))
             }
         }
     ) { innerPadding ->
@@ -150,7 +150,7 @@ fun CallToolScreen(viewModel: CallToolViewModel = viewModel(), onBack: () -> Uni
         is ToolCallState.Loading -> {
             AlertDialog(
                 onDismissRequest = { },
-                title = { Text("Calling Tool...") },
+                title = { Text(stringResource(R.string.calling)) },
                 text = {
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
@@ -162,7 +162,7 @@ fun CallToolScreen(viewModel: CallToolViewModel = viewModel(), onBack: () -> Uni
         is ToolCallState.Success -> {
             AlertDialog(
                 onDismissRequest = { viewModel.clearToolCallState() },
-                title = { Text("Result") },
+                title = { Text(stringResource(R.string.call_result)) },
                 text = { 
                     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                         Text(state.result)
@@ -170,7 +170,7 @@ fun CallToolScreen(viewModel: CallToolViewModel = viewModel(), onBack: () -> Uni
                 },
                 confirmButton = {
                     TextButton(onClick = { viewModel.clearToolCallState() }) {
-                        Text("OK")
+                        Text(stringResource(R.string.ok))
                     }
                 }
             )
@@ -178,11 +178,11 @@ fun CallToolScreen(viewModel: CallToolViewModel = viewModel(), onBack: () -> Uni
         is ToolCallState.Error -> {
             AlertDialog(
                 onDismissRequest = { viewModel.clearToolCallState() },
-                title = { Text("Error") },
+                title = { Text(stringResource(R.string.error)) },
                 text = { Text(state.message) },
                 confirmButton = {
                     TextButton(onClick = { viewModel.clearToolCallState() }) {
-                        Text("OK")
+                        Text(stringResource(R.string.ok))
                     }
                 }
             )
@@ -212,11 +212,15 @@ fun ParsedTab(tool: ToolCacheEntity?, onArgumentsChanged: (Map<String, Any?>) ->
                 null
             }
         } catch (e: Exception) {
-            parseError = "Failed to parse input schema: ${e.message}"
+            parseError = "placeholder" // Set later
             null
         }
     }
     
+    if (schema == null && tool.inputSchema != null && parseError == "placeholder") {
+        parseError = stringResource(R.string.parse_error, "Invalid Schema")
+    }
+
     if (parseError != null) {
         Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
             // 使用语义化颜色替代硬编码 Color.Red
@@ -237,8 +241,8 @@ fun ParsedTab(tool: ToolCacheEntity?, onArgumentsChanged: (Map<String, Any?>) ->
         schema?.properties?.map { (name, definition) ->
             PropertyInfo(
                 name = name,
-                type = definition.type ?: "string",
-                description = definition.description,
+                type = definition.typeString ?: "string",
+                description = definition.descriptionString,
                 label = if (schema.required.contains(name)) "$name *" else name
             )
         } ?: emptyList()
@@ -269,7 +273,7 @@ fun ParsedTab(tool: ToolCacheEntity?, onArgumentsChanged: (Map<String, Any?>) ->
     }
 
     // Update parent whenever input values change
-    androidx.compose.runtime.SideEffect {
+    SideEffect {
         onArgumentsChanged(getResultArgs(inputValues.value))
     }
 
@@ -285,7 +289,7 @@ fun ParsedTab(tool: ToolCacheEntity?, onArgumentsChanged: (Map<String, Any?>) ->
         }
 
         if (propertyInfos.isEmpty()) {
-            Text("This tool takes no parameters.")
+            Text(stringResource(R.string.no_parameters))
         } else {
             propertyInfos.forEach { info ->
                 when (info.type) {
@@ -329,7 +333,7 @@ fun JsonTab(jsonInput: String, onJsonInputChanged: (String) -> Unit) {
             .padding(16.dp)
     ) {
         Text(
-            text = "Enter raw JSON for tool parameters:",
+            text = stringResource(R.string.json_input_hint),
             style = MaterialTheme.typography.bodyMedium
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -339,8 +343,8 @@ fun JsonTab(jsonInput: String, onJsonInputChanged: (String) -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
-            label = { Text("Arguments (JSON)") },
-            placeholder = { Text("{\"param\": \"value\"}") }
+            label = { Text(stringResource(R.string.arguments_json)) },
+            placeholder = { Text(stringResource(R.string.json_placeholder)) }
         )
     }
 }

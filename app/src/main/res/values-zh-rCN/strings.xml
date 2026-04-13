@@ -1,0 +1,74 @@
+<resources>
+    <string name="app_name">McpShortcuts</string>
+    <!-- Common -->
+    <string name="ok">确定</string>
+    <string name="cancel">取消</string>
+    <string name="save">保存</string>
+    <string name="delete">删除</string>
+    <string name="remove">移除</string>
+    <string name="back">返回</string>
+    <string name="error">Error</string>
+    <string name="success">成功</string>
+    <string name="connect">连接</string>
+    <string name="connected">已连接</string>
+    <string name="label">标签</string>
+    <string name="loading">加载中...</string>
+    <string name="unknown_error">Unknown error</string>
+
+    <!-- Main Screen -->
+    <string name="add_server">添加服务器</string>
+    <string name="no_servers_hint">暂无 MCP 服务器，点击右上角 + 按钮添加。</string>
+    <string name="header_pinned">固定</string>
+    <string name="header_recent">最近</string>
+    <string name="header_all">所有</string>
+    <string name="calling">调用中...</string>
+    <string name="call_result">调用结果</string>
+    <string name="call_failed">Call Failed</string>
+    <string name="unpin">取消固定</string>
+    <string name="unpin_confirm_title">取消固定</string>
+    <string name="unpin_confirm_message">确定要移除固定工具「%1$s」吗？</string>
+    <string name="delete_record">删除记录</string>
+    <string name="no_cached_tools">该服务器暂无缓存的工具。</string>
+    <string name="tools_update_found">发现 Tools 更新，点击刷新</string>
+    <string name="delete_server">删除服务器</string>
+    <string name="delete_server_confirm_message">确定要删除服务器「%1$s」吗？删除服务器时，相关联的最近记录和固定工具也将被删除。</string>
+
+    <!-- Add Server Screen -->
+    <string name="add_mcp_server">添加 MCP 服务器</string>
+    <string name="server_name">服务器名称</string>
+    <string name="server_url">服务器 URL (SSE)</string>
+    <string name="headers_optional">请求头（可选）</string>
+    <string name="key">键</string>
+    <string name="value">值</string>
+    <string name="add_header">添加请求头</string>
+    <string name="test_connection">测试连接</string>
+    <string name="testing">测试中...</string>
+    <string name="url_empty_error">URL 不能为空</string>
+    <string name="connecting">连接中...</string>
+    <string name="test_success_found_tools">成功！发现工具：\n%1$s</string>
+    <string name="connection_timeout">连接超时</string>
+    <string name="error_with_message">Error: %1$s</string>
+
+    <!-- Call Tool Screen -->
+    <string name="call_tool">调用工具</string>
+    <string name="tab_parsed">解析</string>
+    <string name="tab_json">JSON</string>
+    <string name="parse_error">Failed to parse input schema: %1$s</string>
+    <string name="no_parameters">该工具无需参数。</string>
+    <string name="json_input_hint">请输入工具参数的原始 JSON：</string>
+    <string name="arguments_json">参数 (JSON)</string>
+    <string name="json_placeholder">{\"param\": \"value\"}</string>
+
+    <!-- History Screen -->
+    <string name="call_history">调用记录</string>
+    <string name="save_as_pinned">保存为固定工具</string>
+    <string name="call_again">再次调用</string>
+    <string name="called_at">调用时间：%1$s</string>
+    <string name="call_arguments">调用参数</string>
+    <string name="no_result">（无结果）</string>
+    <string name="save_pinned_title">保存为固定工具</string>
+    <string name="save_pinned_hint">请为该快捷调用输入标签（留空则使用工具名）：</string>
+    <string name="saved_to_pinned">已保存到固定工具</string>
+    <string name="failed_to_call_not_connected">Failed to call tool: Server not connected.</string>
+    <string name="failed_to_call_with_message">Failed to call tool: %1$s</string>
+</resources>

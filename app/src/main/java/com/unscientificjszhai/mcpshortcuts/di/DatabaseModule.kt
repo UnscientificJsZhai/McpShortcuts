@@ -25,10 +25,7 @@ object DatabaseModule {
             context,
             McpDatabase::class.java,
             "mcp_shortcuts.db"
-        )
-            // 开发阶段数据库结构变更时采用破坏性迁移，直接清空数据
-            .fallbackToDestructiveMigration()
-            .build()
+        ).build()
     }
 
     @Provides

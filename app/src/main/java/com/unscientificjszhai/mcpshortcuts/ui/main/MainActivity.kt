@@ -1,4 +1,4 @@
-package com.unscientificjszhai.mcpshortcuts
+package com.unscientificjszhai.mcpshortcuts.ui.main
 
 import android.content.Intent
 import android.os.Bundle
@@ -62,14 +62,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.res.stringResource
+import com.unscientificjszhai.mcpshortcuts.R
 import com.unscientificjszhai.mcpshortcuts.data.database.entity.PinnedToolEntity
 import com.unscientificjszhai.mcpshortcuts.data.database.entity.ToolCacheEntity
 import com.unscientificjszhai.mcpshortcuts.data.database.entity.ToolCallHistoryEntity
 import com.unscientificjszhai.mcpshortcuts.mcp.McpClientState
-import com.unscientificjszhai.mcpshortcuts.ui.CallToolActivity
-import com.unscientificjszhai.mcpshortcuts.ui.MainViewModel
-import com.unscientificjszhai.mcpshortcuts.ui.ServerWithTools
-import com.unscientificjszhai.mcpshortcuts.ui.ToolCallState
+import com.unscientificjszhai.mcpshortcuts.ui.call.CallToolActivity
 import com.unscientificjszhai.mcpshortcuts.ui.history.ToolCallHistoryActivity
 import com.unscientificjszhai.mcpshortcuts.ui.server.AddServerActivity
 import com.unscientificjszhai.mcpshortcuts.ui.theme.McpShortcutsTheme
@@ -93,7 +92,7 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(viewModel: MainViewModel = viewModel()) {
+fun MainScreen(viewModel: MainActivityViewModel = viewModel()) {
     val context = LocalContext.current
     val serversWithTools by viewModel.serversWithTools.collectAsState()
     val recentHistory by viewModel.recentHistory.collectAsState()
@@ -103,14 +102,14 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
     Scaffold(
         modifier = Modifier.fillMaxSize(), topBar = {
             TopAppBar(
-                title = { Text("McpShortcuts") }, colors = TopAppBarDefaults.topAppBarColors(
+                title = { Text(stringResource(R.string.app_name)) }, colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 ), actions = {
                     IconButton(onClick = {
                         context.startActivity(Intent(context, AddServerActivity::class.java))
                     }) {
-                        Icon(Icons.Default.Add, contentDescription = "添加服务器")
+                        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_server))
                     }
                 })
         }) { innerPadding ->
@@ -123,7 +122,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                     .padding(innerPadding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("暂无 MCP 服务器，点击右上角 + 按钮添加。")
+                Text(stringResource(R.string.no_servers_hint))
             }
         } else {
             LazyColumn(
@@ -134,7 +133,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                 if (pinnedTools.isNotEmpty()) {
                     item(key = "header_pinned") {
                         SectionHeader(
-                            title = "固定",
+                            title = stringResource(R.string.header_pinned),
                             icon = {
                                 Icon(
                                     Icons.Default.Star,
@@ -158,7 +157,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                 if (recentHistory.isNotEmpty()) {
                     item(key = "header_recent") {
                         SectionHeader(
-                            title = "最近",
+                            title = stringResource(R.string.header_recent),
                             icon = {
                                 Icon(
                                     Icons.Default.DateRange,
@@ -186,7 +185,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                 // ————— 所有工具 section —————
                 item(key = "header_all") {
                     SectionHeader(
-                        title = "所有",
+                        title = stringResource(R.string.header_all),
                         icon = {
                             Icon(
                                 Icons.AutoMirrored.Filled.List,
@@ -221,7 +220,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
         is ToolCallState.Loading -> {
             AlertDialog(
                 onDismissRequest = { },
-                title = { Text("调用中...") },
+                title = { Text(stringResource(R.string.calling)) },
                 text = {
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
@@ -234,11 +233,11 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
         is ToolCallState.Success -> {
             AlertDialog(
                 onDismissRequest = { viewModel.clearToolCallState() },
-                title = { Text("调用结果") },
+                title = { Text(stringResource(R.string.call_result)) },
                 text = { Text(state.result) },
                 confirmButton = {
                     TextButton(onClick = { viewModel.clearToolCallState() }) {
-                        Text("确定")
+                        Text(stringResource(R.string.ok))
                     }
                 }
             )
@@ -247,11 +246,11 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
         is ToolCallState.Error -> {
             AlertDialog(
                 onDismissRequest = { viewModel.clearToolCallState() },
-                title = { Text("调用失败") },
+                title = { Text(stringResource(R.string.call_failed)) },
                 text = { Text(state.message) },
                 confirmButton = {
                     TextButton(onClick = { viewModel.clearToolCallState() }) {
-                        Text("确定")
+                        Text(stringResource(R.string.ok))
                     }
                 }
             )
@@ -330,7 +329,7 @@ fun PinnedToolItem(
             IconButton(onClick = { showDeleteDialog = true }) {
                 Icon(
                     Icons.Default.Delete,
-                    contentDescription = "取消固定",
+                    contentDescription = stringResource(R.string.unpin),
                     tint = MaterialTheme.colorScheme.outline
                 )
             }
@@ -341,19 +340,19 @@ fun PinnedToolItem(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("取消固定") },
-            text = { Text("确定要移除固定工具「${pinned.label}」吗？") },
+            title = { Text(stringResource(R.string.unpin_confirm_title)) },
+            text = { Text(stringResource(R.string.unpin_confirm_message, pinned.label)) },
             confirmButton = {
                 TextButton(onClick = {
                     onDeleteClick()
                     showDeleteDialog = false
                 }) {
-                    Text("移除")
+                    Text(stringResource(R.string.remove))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("取消")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -436,7 +435,7 @@ fun HistoryItem(
             onDismissRequest = { showMenu = false }
         ) {
             DropdownMenuItem(
-                text = { Text("删除记录") },
+                text = { Text(stringResource(R.string.delete_record)) },
                 onClick = {
                     showMenu = false
                     onDeleteClick()
@@ -444,7 +443,7 @@ fun HistoryItem(
                 leadingIcon = {
                     Icon(
                         Icons.Default.Delete,
-                        contentDescription = "删除记录",
+                        contentDescription = stringResource(R.string.delete_record),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
@@ -497,7 +496,7 @@ fun ServerItem(
 
                     if (item.tools.isEmpty()) {
                         Text(
-                            "该服务器暂无缓存的工具。",
+                            stringResource(R.string.no_cached_tools),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     } else {
@@ -516,7 +515,7 @@ fun ServerItem(
                         Button(
                             onClick = onUpdateTools, modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("发现 Tools 更新，点击刷新")
+                            Text(stringResource(R.string.tools_update_found))
                         }
                     }
                 }
@@ -527,19 +526,19 @@ fun ServerItem(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("删除服务器") },
-            text = { Text("确定要删除服务器「${item.server.name}」吗？删除服务器时，相关联的最近记录和固定工具也将被删除。") },
+            title = { Text(stringResource(R.string.delete_server)) },
+            text = { Text(stringResource(R.string.delete_server_confirm_message, item.server.name)) },
             confirmButton = {
                 TextButton(onClick = {
                     onDeleteClick()
                     showDeleteDialog = false
                 }) {
-                    Text("删除", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("取消")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -582,7 +581,7 @@ fun StatusIndicator(state: McpClientState, onRetry: () -> Unit) {
             // 使用 tertiary 颜色表示正常/成功状态，深色/浅色模式均有良好对比度
             Icon(
                 Icons.Default.CheckCircle,
-                contentDescription = "已连接",
+                contentDescription = stringResource(R.string.connected),
                 tint = MaterialTheme.colorScheme.tertiary
             )
         }
@@ -590,11 +589,11 @@ fun StatusIndicator(state: McpClientState, onRetry: () -> Unit) {
         is McpClientState.Error -> {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 // 使用语义化 error 颜色，深色/浅色模式自动适配
-                Text(text = "错误", color = MaterialTheme.colorScheme.error)
+                Text(text = stringResource(R.string.error), color = MaterialTheme.colorScheme.error)
                 Spacer(modifier = Modifier.size(4.dp))
                 Icon(
                     Icons.Default.Warning,
-                    contentDescription = "错误",
+                    contentDescription = stringResource(R.string.error),
                     tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.clickable { onRetry() })
             }
@@ -602,7 +601,7 @@ fun StatusIndicator(state: McpClientState, onRetry: () -> Unit) {
 
         is McpClientState.Disconnected -> {
             Button(onClick = onRetry) {
-                Text("连接")
+                Text(stringResource(R.string.connect))
             }
         }
     }

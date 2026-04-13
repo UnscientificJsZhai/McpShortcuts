@@ -1,4 +1,4 @@
-package com.unscientificjszhai.mcpshortcuts.ui
+package com.unscientificjszhai.mcpshortcuts.ui.call
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -7,16 +7,26 @@ import com.unscientificjszhai.mcpshortcuts.data.database.dao.PinnedToolDao
 import com.unscientificjszhai.mcpshortcuts.data.database.dao.ToolCacheDao
 import com.unscientificjszhai.mcpshortcuts.data.database.dao.ToolCallHistoryDao
 import com.unscientificjszhai.mcpshortcuts.data.database.entity.PinnedToolEntity
-import com.unscientificjszhai.mcpshortcuts.data.database.entity.ToolCallHistoryEntity
 import com.unscientificjszhai.mcpshortcuts.data.database.entity.ToolCacheEntity
+import com.unscientificjszhai.mcpshortcuts.data.database.entity.ToolCallHistoryEntity
 import com.unscientificjszhai.mcpshortcuts.mcp.McpConnectionManager
+import com.unscientificjszhai.mcpshortcuts.ui.main.ToolCallState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.put
 import javax.inject.Inject
-import kotlinx.serialization.json.*
 
 @HiltViewModel
 class CallToolViewModel @Inject constructor(
@@ -71,7 +81,8 @@ class CallToolViewModel @Inject constructor(
                     // 调用成功后自动记录历史
                     saveHistory(argsJson, resultStr)
                 } else {
-                    _toolCallState.value = ToolCallState.Error("Failed to call tool: Server not connected.")
+                    _toolCallState.value =
+                        ToolCallState.Error("Failed to call tool: Server not connected.")
                 }
             } catch (e: Exception) {
                 _toolCallState.value = ToolCallState.Error(e.message ?: "Unknown error")
@@ -103,7 +114,8 @@ class CallToolViewModel @Inject constructor(
                     // 调用成功后自动记录历史
                     saveHistory(lastArgumentsJson, resultStr)
                 } else {
-                    _toolCallState.value = ToolCallState.Error("Failed to call tool: Server not connected.")
+                    _toolCallState.value =
+                        ToolCallState.Error("Failed to call tool: Server not connected.")
                 }
             } catch (e: Exception) {
                 _toolCallState.value = ToolCallState.Error("JSON parsing error: ${e.message}")
@@ -175,6 +187,7 @@ class CallToolViewModel @Inject constructor(
                 else if (element.content == "true" || element.content == "false") element.booleanOrNull
                 else element.doubleOrNull ?: element.content
             }
+
             is JsonObject -> element.mapValues { jsonElementToMap(it.value) }
             is JsonArray -> element.map { jsonElementToMap(it) }
             JsonNull -> null

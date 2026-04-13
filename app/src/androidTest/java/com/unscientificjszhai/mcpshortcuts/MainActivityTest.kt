@@ -2,7 +2,7 @@ package com.unscientificjszhai.mcpshortcuts
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import com.unscientificjszhai.mcpshortcuts.ui.theme.McpShortcutsTheme
+import com.unscientificjszhai.mcpshortcuts.ui.main.MainActivity
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Before

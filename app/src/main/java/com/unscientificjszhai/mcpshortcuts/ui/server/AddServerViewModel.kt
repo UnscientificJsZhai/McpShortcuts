@@ -21,6 +21,14 @@ import kotlinx.coroutines.withTimeout
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
 
+sealed class TestResult {
+    object Connecting : TestResult()
+    data class Success(val toolNames: String) : TestResult()
+    object Timeout : TestResult()
+    data class Error(val message: String?) : TestResult()
+    object UrlEmpty : TestResult()
+}
+
 @HiltViewModel
 class AddServerViewModel @Inject constructor(
     private val mcpServerDao: McpServerDao
@@ -38,8 +46,8 @@ class AddServerViewModel @Inject constructor(
     private val _isTesting = MutableStateFlow(false)
     val isTesting: StateFlow<Boolean> = _isTesting.asStateFlow()
 
-    private val _testResult = MutableStateFlow<String?>(null)
-    val testResult: StateFlow<String?> = _testResult.asStateFlow()
+    private val _testResult = MutableStateFlow<TestResult?>(null)
+    val testResult: StateFlow<TestResult?> = _testResult.asStateFlow()
 
     private val gson = Gson()
 
@@ -74,20 +82,19 @@ class AddServerViewModel @Inject constructor(
     fun testConnection() {
         val url = _serverUrl.value
         if (url.isBlank()) {
-            _testResult.value = "URL cannot be empty"
+            _testResult.value = TestResult.UrlEmpty
             return
         }
 
         viewModelScope.launch {
             _isTesting.value = true
-            _testResult.value = "Connecting..."
+            _testResult.value = TestResult.Connecting
             
             val headerMap = _headers.value
                 .filter { it.key.isNotBlank() }
                 .associate { it.key to it.value }
 
             val httpClient = HttpClient(OkHttp) {
-                // Add headers for test connection
                 install(io.ktor.client.plugins.DefaultRequest) {
                     headerMap.forEach { (key, value) ->
                         headers.append(key, value)
@@ -103,21 +110,20 @@ class AddServerViewModel @Inject constructor(
                             version = "1.0.0"
                         )
                     )
-                    // Initialize SSE transport
                     val transport = StreamableHttpClientTransport(httpClient, url)
                     try {
                         client.connect(transport)
                         val toolsResponse = client.listTools()
                         val toolNames = toolsResponse.tools.joinToString(", ") { it.name }
-                        _testResult.value = "Success! Found tools: \n$toolNames"
+                        _testResult.value = TestResult.Success(toolNames)
                     } finally {
                         client.close()
                     }
                 }
             } catch (e: TimeoutCancellationException) {
-                _testResult.value = "Connection timeout"
+                _testResult.value = TestResult.Timeout
             } catch (e: Exception) {
-                _testResult.value = "Error: ${e.message}"
+                _testResult.value = TestResult.Error(e.message)
             } finally {
                 _isTesting.value = false
                 httpClient.close()
@@ -130,7 +136,7 @@ class AddServerViewModel @Inject constructor(
         val url = _serverUrl.value
 
         if (name.isBlank() || url.isBlank()) {
-            return // Or show error
+            return
         }
 
         val headerMap = _headers.value

@@ -16,7 +16,7 @@
         android:theme="@style/Theme.McpShortcuts"
         android:usesCleartextTraffic="true">
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.main.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.McpShortcuts">
@@ -33,7 +33,7 @@
             android:theme="@style/Theme.McpShortcuts" />
 
         <activity
-            android:name=".ui.CallToolActivity"
+            android:name=".ui.call.CallToolActivity"
             android:exported="false"
             android:theme="@style/Theme.McpShortcuts" />
 

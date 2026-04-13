@@ -2,9 +2,10 @@ package com.unscientificjszhai.mcpshortcuts.ui
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
-import com.unscientificjszhai.mcpshortcuts.ServerItem
+import com.unscientificjszhai.mcpshortcuts.ui.main.ServerItem
 import com.unscientificjszhai.mcpshortcuts.data.database.entity.McpServerEntity
 import com.unscientificjszhai.mcpshortcuts.mcp.McpClientState
+import com.unscientificjszhai.mcpshortcuts.ui.main.ServerWithTools
 import com.unscientificjszhai.mcpshortcuts.ui.theme.McpShortcutsTheme
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation

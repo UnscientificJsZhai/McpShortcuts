@@ -14,6 +14,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
+import androidx.compose.ui.res.stringResource
+import com.unscientificjszhai.mcpshortcuts.R
+
+// ... (other imports)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddServerScreen(
@@ -29,7 +34,7 @@ fun AddServerScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Add MCP Server") },
+                title = { Text(stringResource(R.string.add_mcp_server)) },
                 // 添加颜色配置以让系统 UI 区域匹配深色/浅色模式
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -38,7 +43,7 @@ fun AddServerScreen(
                 ),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 }
             )
@@ -53,7 +58,7 @@ fun AddServerScreen(
             OutlinedTextField(
                 value = serverName,
                 onValueChange = { viewModel.updateServerName(it) },
-                label = { Text("Server Name") },
+                label = { Text(stringResource(R.string.server_name)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -63,14 +68,14 @@ fun AddServerScreen(
             OutlinedTextField(
                 value = serverUrl,
                 onValueChange = { viewModel.updateServerUrl(it) },
-                label = { Text("Server URL (SSE)") },
+                label = { Text(stringResource(R.string.server_url)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            Text("Headers (Optional)", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.headers_optional), style = MaterialTheme.typography.titleMedium)
             
             LazyColumn(
                 modifier = Modifier
@@ -88,7 +93,7 @@ fun AddServerScreen(
                             value = header.key,
                             onValueChange = { viewModel.updateHeader(index, it, header.value) },
                             modifier = Modifier.weight(1f),
-                            label = { Text("Key") },
+                            label = { Text(stringResource(R.string.key)) },
                             singleLine = true
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -96,11 +101,11 @@ fun AddServerScreen(
                             value = header.value,
                             onValueChange = { viewModel.updateHeader(index, header.key, it) },
                             modifier = Modifier.weight(1f),
-                            label = { Text("Value") },
+                            label = { Text(stringResource(R.string.value)) },
                             singleLine = true
                         )
                         IconButton(onClick = { viewModel.removeHeader(index) }) {
-                            Icon(imageVector = Icons.Default.Delete, contentDescription = "Remove")
+                            Icon(imageVector = Icons.Default.Delete, contentDescription = stringResource(R.string.remove))
                         }
                     }
                 }
@@ -112,13 +117,20 @@ fun AddServerScreen(
                     ) {
                         Icon(imageVector = Icons.Default.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Add Header")
+                        Text(stringResource(R.string.add_header))
                     }
                 }
 
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
                     if (testResult != null) {
+                        val resultText = when (val res = testResult!!) {
+                            is TestResult.Connecting -> stringResource(R.string.connecting)
+                            is TestResult.UrlEmpty -> stringResource(R.string.url_empty_error)
+                            is TestResult.Success -> stringResource(R.string.test_success_found_tools, res.toolNames)
+                            is TestResult.Timeout -> stringResource(R.string.connection_timeout)
+                            is TestResult.Error -> stringResource(R.string.error_with_message, res.message ?: "")
+                        }
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(
@@ -126,7 +138,7 @@ fun AddServerScreen(
                             )
                         ) {
                             Text(
-                                text = testResult!!,
+                                text = resultText,
                                 modifier = Modifier.padding(16.dp)
                             )
                         }
@@ -144,14 +156,14 @@ fun AddServerScreen(
                     onClick = { viewModel.testConnection() },
                     enabled = !isTesting
                 ) {
-                    Text(if (isTesting) "Testing..." else "Test Connection")
+                    Text(if (isTesting) stringResource(R.string.testing) else stringResource(R.string.test_connection))
                 }
                 
                 Button(
                     onClick = { viewModel.saveServer(onSuccess = onBack) },
                     enabled = serverName.isNotBlank() && serverUrl.isNotBlank() && !isTesting
                 ) {
-                    Text("Save")
+                    Text(stringResource(R.string.save))
                 }
             }
         }

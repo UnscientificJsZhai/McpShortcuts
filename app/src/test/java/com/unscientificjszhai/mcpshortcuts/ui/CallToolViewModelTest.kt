@@ -6,6 +6,8 @@ import com.unscientificjszhai.mcpshortcuts.data.database.dao.ToolCacheDao
 import com.unscientificjszhai.mcpshortcuts.data.database.dao.ToolCallHistoryDao
 import com.unscientificjszhai.mcpshortcuts.data.database.entity.ToolCacheEntity
 import com.unscientificjszhai.mcpshortcuts.mcp.McpConnectionManager
+import com.unscientificjszhai.mcpshortcuts.ui.call.CallToolViewModel
+import com.unscientificjszhai.mcpshortcuts.ui.main.ToolCallState
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import kotlinx.coroutines.Dispatchers
@@ -41,7 +43,13 @@ class CallToolViewModelTest {
             whenever(toolCacheDao.getTool(serverId, toolName)).thenReturn(tool)
         }
         
-        viewModel = CallToolViewModel(toolCacheDao, toolCallHistoryDao, pinnedToolDao, connectionManager, savedStateHandle)
+        viewModel = CallToolViewModel(
+            toolCacheDao,
+            toolCallHistoryDao,
+            pinnedToolDao,
+            connectionManager,
+            savedStateHandle
+        )
     }
 
     @After

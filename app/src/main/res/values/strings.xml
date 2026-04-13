@@ -1,3 +1,74 @@
 <resources>
     <string name="app_name">McpShortcuts</string>
+    <!-- Common -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="remove">Remove</string>
+    <string name="back">Back</string>
+    <string name="error">Error</string>
+    <string name="success">Success</string>
+    <string name="connect">Connect</string>
+    <string name="connected">Connected</string>
+    <string name="label">Label</string>
+    <string name="loading">Loading...</string>
+    <string name="unknown_error">Unknown error</string>
+
+    <!-- Main Screen -->
+    <string name="add_server">Add Server</string>
+    <string name="no_servers_hint">No MCP servers. Click the + button in the top right to add one.</string>
+    <string name="header_pinned">Pinned</string>
+    <string name="header_recent">Recent</string>
+    <string name="header_all">All</string>
+    <string name="calling">Calling...</string>
+    <string name="call_result">Call Result</string>
+    <string name="call_failed">Call Failed</string>
+    <string name="unpin">Unpin</string>
+    <string name="unpin_confirm_title">Unpin Tool</string>
+    <string name="unpin_confirm_message">Are you sure you want to remove the pinned tool \"%1$s\"?</string>
+    <string name="delete_record">Delete Record</string>
+    <string name="no_cached_tools">No cached tools for this server.</string>
+    <string name="tools_update_found">Tools update found, click to refresh</string>
+    <string name="delete_server">Delete Server</string>
+    <string name="delete_server_confirm_message">Are you sure you want to delete server \"%1$s\"? All associated recent history and pinned tools will also be deleted.</string>
+
+    <!-- Add Server Screen -->
+    <string name="add_mcp_server">Add MCP Server</string>
+    <string name="server_name">Server Name</string>
+    <string name="server_url">Server URL (SSE)</string>
+    <string name="headers_optional">Headers (Optional)</string>
+    <string name="key">Key</string>
+    <string name="value">Value</string>
+    <string name="add_header">Add Header</string>
+    <string name="test_connection">Test Connection</string>
+    <string name="testing">Testing...</string>
+    <string name="url_empty_error">URL cannot be empty</string>
+    <string name="connecting">Connecting...</string>
+    <string name="test_success_found_tools">Success! Found tools: \n%1$s</string>
+    <string name="connection_timeout">Connection timeout</string>
+    <string name="error_with_message">Error: %1$s</string>
+
+    <!-- Call Tool Screen -->
+    <string name="call_tool">Call Tool</string>
+    <string name="tab_parsed">Parsed</string>
+    <string name="tab_json">JSON</string>
+    <string name="parse_error">Failed to parse input schema: %1$s</string>
+    <string name="no_parameters">This tool takes no parameters.</string>
+    <string name="json_input_hint">Enter raw JSON for tool parameters:</string>
+    <string name="arguments_json">Arguments (JSON)</string>
+    <string name="json_placeholder">{\"param\": \"value\"}</string>
+
+    <!-- History Screen -->
+    <string name="call_history">Call History</string>
+    <string name="save_as_pinned">Save as pinned tool</string>
+    <string name="call_again">Call again</string>
+    <string name="called_at">Called at: %1$s</string>
+    <string name="call_arguments">Arguments</string>
+    <string name="no_result">(No result)</string>
+    <string name="save_pinned_title">Save as Pinned Tool</string>
+    <string name="save_pinned_hint">Enter a label for this shortcut (leave empty to use tool name):</string>
+    <string name="saved_to_pinned">Saved to pinned tools</string>
+    <string name="failed_to_call_not_connected">Failed to call tool: Server not connected.</string>
+    <string name="failed_to_call_with_message">Failed to call tool: %1$s</string>
 </resources>

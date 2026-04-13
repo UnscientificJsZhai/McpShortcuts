@@ -8,6 +8,7 @@ import com.unscientificjszhai.mcpshortcuts.data.database.entity.McpServerEntity
 import com.unscientificjszhai.mcpshortcuts.data.database.entity.ToolCacheEntity
 import com.unscientificjszhai.mcpshortcuts.mcp.McpClientState
 import com.unscientificjszhai.mcpshortcuts.mcp.McpConnectionManager
+import com.unscientificjszhai.mcpshortcuts.ui.main.MainActivityViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +25,7 @@ import org.mockito.kotlin.*
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModelTest {
 
-    private lateinit var viewModel: MainViewModel
+    private lateinit var viewModel: MainActivityViewModel
     private val serverDao: McpServerDao = mock()
     private val toolCacheDao: ToolCacheDao = mock()
     private val toolCallHistoryDao: ToolCallHistoryDao = mock()
@@ -44,7 +45,13 @@ class MainViewModelTest {
         whenever(toolCallHistoryDao.getRecentHistory(any())).thenReturn(flowOf(emptyList()))
         whenever(pinnedToolDao.getAllPinnedTools()).thenReturn(flowOf(emptyList()))
         
-        viewModel = MainViewModel(serverDao, toolCacheDao, toolCallHistoryDao, pinnedToolDao, connectionManager)
+        viewModel = MainActivityViewModel(
+            serverDao,
+            toolCacheDao,
+            toolCallHistoryDao,
+            pinnedToolDao,
+            connectionManager
+        )
     }
 
     @After

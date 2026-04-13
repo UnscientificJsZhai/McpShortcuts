@@ -1,4 +1,4 @@
-package com.unscientificjszhai.mcpshortcuts.ui
+package com.unscientificjszhai.mcpshortcuts.ui.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -26,7 +26,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 
@@ -45,7 +44,7 @@ sealed class ToolCallState {
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
-class MainViewModel @Inject constructor(
+class MainActivityViewModel @Inject constructor(
     private val serverDao: McpServerDao,
     private val toolCacheDao: ToolCacheDao,
     private val toolCallHistoryDao: ToolCallHistoryDao,
