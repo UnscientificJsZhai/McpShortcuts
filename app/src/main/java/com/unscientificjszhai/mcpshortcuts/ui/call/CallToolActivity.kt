@@ -187,6 +187,9 @@ fun CallToolScreen(viewModel: CallToolViewModel = viewModel(), onBack: () -> Uni
                 }
             )
         }
+        is ToolCallState.SilentSuccess, is ToolCallState.SilentError -> {
+            viewModel.clearToolCallState()
+        }
         ToolCallState.Idle -> { /* Do nothing */ }
     }
 }
@@ -211,7 +214,7 @@ fun ParsedTab(tool: ToolCacheEntity?, onArgumentsChanged: (Map<String, Any?>) ->
             } else {
                 null
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             parseError = "placeholder" // Set later
             null
         }

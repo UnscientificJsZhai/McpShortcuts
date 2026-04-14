@@ -14,6 +14,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -37,7 +38,8 @@ class McpConnectionManager @Inject constructor(
     private val httpClient: HttpClient,
     private val serverDao: McpServerDao,
     private val toolCacheDao: ToolCacheDao,
-    private val clientFactory: McpClientFactory
+    private val clientFactory: McpClientFactory,
+    private val notificationManager: McpNotificationManager
 ) {
     // 允许通过某些手段替换 scope 用于测试
     var scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -68,12 +70,13 @@ class McpConnectionManager @Inject constructor(
                 scope.launch {
                     try {
                         state.client.close()
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
                         // Ignore
                     }
                 }
             }
             updatedClients.remove(id)
+            notificationManager.deleteChannelForServer(id)
         }
 
         // 为新添加的服务器尝试连接
@@ -88,7 +91,7 @@ class McpConnectionManager @Inject constructor(
 
     fun connect(server: McpServerEntity) {
         scope.launch {
-            _clients.value = _clients.value + (server.id to McpClientState.Connecting)
+            _clients.value += (server.id to McpClientState.Connecting)
             try {
                 val headers = if (server.headersJson != null) {
                     val type = object : TypeToken<Map<String, String>>() {}.type
@@ -111,6 +114,12 @@ class McpConnectionManager @Inject constructor(
                 val transport = clientFactory.createTransport(serverHttpClient, server.url)
                 val client = clientFactory.createClient()
 
+                client.fallbackNotificationHandler = { notification ->
+                    if (!notification.method.startsWith("notifications/")) {
+                        notificationManager.showServerNotification(server.id, server.name, notification)
+                    }
+                }
+
                 client.connect(transport)
 
                 // 连接成功后，检查工具更新
@@ -130,21 +139,58 @@ class McpConnectionManager @Inject constructor(
                 if (cachedTools.isEmpty() && serverTools.isNotEmpty()) {
                     // 如果缓存为空但服务端有工具，直接更新数据库（平滑处理：首次连接直接加载）
                     toolCacheDao.replaceToolsForServer(server.id, serverTools)
-                    _clients.value = _clients.value + (server.id to McpClientState.Connected(
-                        client, hasUpdate = false
-                    ))
+                    _clients.value += (server.id to McpClientState.Connected(
+                                            client, hasUpdate = false
+                                        ))
                 } else {
-                    _clients.value = _clients.value + (server.id to McpClientState.Connected(
-                        client,
-                        hasUpdate = hasUpdate,
-                        pendingTools = if (hasUpdate) serverTools else null
-                    ))
+                    _clients.value += (server.id to McpClientState.Connected(
+                                            client,
+                                            hasUpdate = hasUpdate,
+                                            pendingTools = if (hasUpdate) serverTools else null
+                                        ))
                 }
 
             } catch (e: Exception) {
-                _clients.value = _clients.value + (server.id to McpClientState.Error(
-                    e.message ?: "Unknown error"
-                ))
+                _clients.value += (server.id to McpClientState.Error(
+                                    e.message ?: "Unknown error"
+                                ))
+            }
+        }
+    }
+
+    /**
+     * 应用进入后台时：断开不保持连接的服务器
+     */
+    fun onAppBackgrounded(servers: List<McpServerEntity>) {
+        val nonKeepAliveIds = servers.filter { !it.keepAlive }.map { it.id }.toSet()
+        val updatedClients = _clients.value.toMutableMap()
+        
+        nonKeepAliveIds.forEach { id ->
+            val state = updatedClients[id]
+            if (state is McpClientState.Connected) {
+                scope.launch {
+                    try {
+                        state.client.close()
+                    } catch (_: Exception) {
+                        // Ignore
+                    }
+                }
+                updatedClients[id] = McpClientState.Disconnected
+            }
+        }
+        _clients.value = updatedClients
+    }
+
+    /**
+     * 应用进入前台时：重新同步并连接之前断掉的服务器
+     */
+    fun onAppForegrounded() {
+        scope.launch {
+            try {
+                val servers = serverDao.getAllServers().first()
+                syncConnections(servers)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
@@ -176,9 +222,9 @@ class McpConnectionManager @Inject constructor(
         if (state is McpClientState.Connected && state.hasUpdate && state.pendingTools != null) {
             scope.launch {
                 toolCacheDao.replaceToolsForServer(serverId, state.pendingTools)
-                _clients.value = _clients.value + (serverId to state.copy(
-                    hasUpdate = false, pendingTools = null
-                ))
+                _clients.value += (serverId to state.copy(
+                                    hasUpdate = false, pendingTools = null
+                                ))
             }
         }
     }

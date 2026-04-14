@@ -1,5 +1,6 @@
 package com.unscientificjszhai.mcpshortcuts.ui.history
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,7 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
@@ -75,6 +76,7 @@ fun ToolCallHistoryScreen(
     // 控制"保存为固定工具"对话框的显示
     var showSaveDialog by remember { mutableStateOf(false) }
     var labelInput by remember { mutableStateOf("") }
+    var ignoreResult by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -89,7 +91,10 @@ fun ToolCallHistoryScreen(
                 ),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back)
+                        )
                     }
                 },
                 actions = {
@@ -98,7 +103,10 @@ fun ToolCallHistoryScreen(
                         labelInput = history?.toolName ?: ""
                         showSaveDialog = true
                     }) {
-                        Icon(Icons.Default.Star, contentDescription = stringResource(R.string.save_as_pinned))
+                        Icon(
+                            Icons.Default.Star,
+                            contentDescription = stringResource(R.string.save_as_pinned)
+                        )
                     }
                 }
             )
@@ -159,7 +167,10 @@ fun ToolCallHistoryScreen(
                 }
 
                 // 调用参数
-                Text(stringResource(R.string.call_arguments), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    stringResource(R.string.call_arguments),
+                    style = MaterialTheme.typography.titleMedium
+                )
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -174,7 +185,10 @@ fun ToolCallHistoryScreen(
                 }
 
                 // 调用结果
-                Text(stringResource(R.string.call_result), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    stringResource(R.string.call_result),
+                    style = MaterialTheme.typography.titleMedium
+                )
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -210,18 +224,39 @@ fun ToolCallHistoryScreen(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    androidx.compose.foundation.layout.Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(onClick = { ignoreResult = !ignoreResult }),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        androidx.compose.material3.Checkbox(
+                            checked = ignoreResult,
+                            onCheckedChange = { ignoreResult = it }
+                        )
+                        Text(
+                            text = stringResource(R.string.ignore_result),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
                 }
             },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.saveAsPinned(labelInput)
+                    viewModel.saveAsPinned(labelInput, ignoreResult)
                     showSaveDialog = false
+                    ignoreResult = false
                 }) {
                     Text(stringResource(R.string.save))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showSaveDialog = false }) {
+                TextButton(onClick = {
+                    showSaveDialog = false
+                    ignoreResult = false
+                }) {
                     Text(stringResource(R.string.cancel))
                 }
             }
@@ -242,6 +277,7 @@ fun ToolCallHistoryScreen(
                 confirmButton = { }
             )
         }
+
         is ToolCallState.Success -> {
             AlertDialog(
                 onDismissRequest = { viewModel.clearCallState() },
@@ -258,6 +294,7 @@ fun ToolCallHistoryScreen(
                 }
             )
         }
+
         is ToolCallState.Error -> {
             AlertDialog(
                 onDismissRequest = { viewModel.clearCallState() },
@@ -270,7 +307,13 @@ fun ToolCallHistoryScreen(
                 }
             )
         }
-        ToolCallState.Idle -> { /* 空闲状态，无需处理 */ }
+
+        is ToolCallState.SilentSuccess, is ToolCallState.SilentError -> {
+            viewModel.clearCallState()
+        }
+
+        ToolCallState.Idle -> { /* 空闲状态，无需处理 */
+        }
     }
 }
 
@@ -288,6 +331,7 @@ private fun formatJson(json: String): String {
                     inString = !inString
                     sb.append(c)
                 }
+
                 inString -> sb.append(c)
                 c == '{' || c == '[' -> {
                     indent++
@@ -295,17 +339,20 @@ private fun formatJson(json: String): String {
                     sb.append('\n')
                     sb.append("  ".repeat(indent))
                 }
+
                 c == '}' || c == ']' -> {
                     indent--
                     sb.append('\n')
                     sb.append("  ".repeat(indent))
                     sb.append(c)
                 }
+
                 c == ',' -> {
                     sb.append(c)
                     sb.append('\n')
                     sb.append("  ".repeat(indent))
                 }
+
                 c == ':' -> sb.append(": ")
                 c != ' ' && c != '\n' && c != '\r' && c != '\t' -> sb.append(c)
             }

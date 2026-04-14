@@ -1,9 +1,12 @@
 package com.unscientificjszhai.mcpshortcuts.ui.main
 
+import android.Manifest
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.core.app.ActivityCompat
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -81,6 +84,15 @@ import java.util.Locale
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                101
+            )
+        }
+        
         enableEdgeToEdge()
         setContent {
             McpShortcutsTheme {
@@ -208,6 +220,12 @@ fun MainScreen(viewModel: MainActivityViewModel = viewModel()) {
                             }
                             context.startActivity(intent)
                         },
+                        onEditClick = {
+                            val intent = Intent(context, AddServerActivity::class.java).apply {
+                                putExtra("serverId", item.server.id)
+                            }
+                            context.startActivity(intent)
+                        },
                         onDeleteClick = { viewModel.deleteServer(item.server) }
                     )
                 }
@@ -256,8 +274,22 @@ fun MainScreen(viewModel: MainActivityViewModel = viewModel()) {
             )
         }
 
-        ToolCallState.Idle -> { /* 空闲状态 */
+        is ToolCallState.SilentSuccess -> {
+            androidx.compose.runtime.LaunchedEffect(state) {
+                android.widget.Toast.makeText(context, context.getString(R.string.call_success), android.widget.Toast.LENGTH_SHORT).show()
+                viewModel.clearToolCallState()
+            }
         }
+
+        is ToolCallState.SilentError -> {
+            androidx.compose.runtime.LaunchedEffect(state) {
+                android.widget.Toast.makeText(context, state.message, android.widget.Toast.LENGTH_SHORT).show()
+                viewModel.clearToolCallState()
+            }
+        }
+
+        ToolCallState.Idle -> { /* 空闲状态 */
+        }    
     }
 }
 
@@ -459,6 +491,7 @@ fun ServerItem(
     onRetry: () -> Unit,
     onUpdateTools: () -> Unit,
     onToolClick: (ToolCacheEntity) -> Unit,
+    onEditClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -468,10 +501,7 @@ fun ServerItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp)
-            .combinedClickable(
-                onClick = { expanded = !expanded },
-                onLongClick = { showDeleteDialog = true }
-            ),
+            .clickable { expanded = !expanded },
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -516,6 +546,19 @@ fun ServerItem(
                             onClick = onUpdateTools, modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(stringResource(R.string.tools_update_found))
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = onEditClick) {
+                            Text(stringResource(R.string.edit))
+                        }
+                        TextButton(onClick = { showDeleteDialog = true }) {
+                            Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
                         }
                     }
                 }

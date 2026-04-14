@@ -19,5 +19,8 @@ data class McpServerEntity(
     val url: String,
     
     // 自定义 Headers 映射的 JSON 字符串表示 (可选)
-    val headersJson: String? = null
+    val headersJson: String? = null,
+    
+    // 是否保持后台连接
+    val keepAlive: Boolean = false
 )

@@ -35,6 +35,9 @@
 
     <!-- Add Server Screen -->
     <string name="add_mcp_server">添加 MCP 服务器</string>
+    <string name="edit_mcp_server">编辑 MCP 服务器</string>
+    <string name="edit">编辑</string>
+    <string name="keep_alive">保持连接</string>
     <string name="server_name">服务器名称</string>
     <string name="server_url">服务器 URL (SSE)</string>
     <string name="headers_optional">请求头（可选）</string>
@@ -71,4 +74,9 @@
     <string name="saved_to_pinned">已保存到固定工具</string>
     <string name="failed_to_call_not_connected">Failed to call tool: Server not connected.</string>
     <string name="failed_to_call_with_message">Failed to call tool: %1$s</string>
+    <string name="ignore_result">忽略结果（静默执行）</string>
+    <string name="call_success">调用成功</string>
+
+    <string name="foreground_service_notification_title">McpShortcuts 正在后台运行</string>
+    <string name="foreground_service_notification_text">为特定服务器保持后台连接</string>
 </resources>

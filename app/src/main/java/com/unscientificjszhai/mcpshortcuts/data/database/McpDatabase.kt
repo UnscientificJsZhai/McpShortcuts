@@ -18,7 +18,7 @@ import com.unscientificjszhai.mcpshortcuts.data.database.entity.ToolCallHistoryE
         ToolCallHistoryEntity::class,
         PinnedToolEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class McpDatabase : RoomDatabase() {

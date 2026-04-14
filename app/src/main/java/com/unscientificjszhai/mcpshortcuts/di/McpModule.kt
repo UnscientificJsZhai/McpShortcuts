@@ -9,6 +9,8 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.sse.SSE
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 @Module
@@ -24,7 +26,14 @@ abstract class McpModule {
         @Singleton
         fun provideHttpClient(): HttpClient {
             return HttpClient(OkHttp) {
-                // 这里可以添加更多的 Ktor 配置，比如超时、日志等
+                engine {
+                    config {
+                        // 必须设置，否则连接会因为超时自动断开
+                        readTimeout(0, TimeUnit.MILLISECONDS)
+                        connectTimeout(10, TimeUnit.SECONDS)
+                    }
+                }
+                install(SSE)
             }
         }
     }

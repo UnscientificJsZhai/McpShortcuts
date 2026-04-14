@@ -43,6 +43,9 @@ class AddServerViewModel @Inject constructor(
     private val _headers = MutableStateFlow<List<ServerHeader>>(emptyList())
     val headers: StateFlow<List<ServerHeader>> = _headers.asStateFlow()
 
+    private val _keepAlive = MutableStateFlow(false)
+    val keepAlive: StateFlow<Boolean> = _keepAlive.asStateFlow()
+
     private val _isTesting = MutableStateFlow(false)
     val isTesting: StateFlow<Boolean> = _isTesting.asStateFlow()
 
@@ -50,6 +53,31 @@ class AddServerViewModel @Inject constructor(
     val testResult: StateFlow<TestResult?> = _testResult.asStateFlow()
 
     private val gson = Gson()
+    
+    private var currentServerId: Long? = null
+
+    fun initData(serverId: Long) {
+        if (serverId != -1L && currentServerId != serverId) {
+            currentServerId = serverId
+            viewModelScope.launch {
+                val server = mcpServerDao.getServerById(serverId)
+                if (server != null) {
+                    _serverName.value = server.name
+                    _serverUrl.value = server.url
+                    _keepAlive.value = server.keepAlive
+                    if (!server.headersJson.isNullOrBlank()) {
+                        try {
+                            val mapType = object : com.google.gson.reflect.TypeToken<Map<String, String>>() {}.type
+                            val map: Map<String, String> = gson.fromJson(server.headersJson, mapType)
+                            _headers.value = map.map { ServerHeader(it.key, it.value) }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     fun updateServerName(name: String) {
         _serverName.value = name
@@ -57,6 +85,10 @@ class AddServerViewModel @Inject constructor(
 
     fun updateServerUrl(url: String) {
         _serverUrl.value = url
+    }
+
+    fun updateKeepAlive(keepAlive: Boolean) {
+        _keepAlive.value = keepAlive
     }
 
     fun addHeader() {
@@ -150,12 +182,25 @@ class AddServerViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            val entity = McpServerEntity(
-                name = name,
-                url = url,
-                headersJson = headersJson
-            )
-            mcpServerDao.insertServer(entity)
+            val id = currentServerId
+            if (id != null) {
+                val entity = McpServerEntity(
+                    id = id,
+                    name = name,
+                    url = url,
+                    headersJson = headersJson,
+                    keepAlive = _keepAlive.value
+                )
+                mcpServerDao.updateServer(entity)
+            } else {
+                val entity = McpServerEntity(
+                    name = name,
+                    url = url,
+                    headersJson = headersJson,
+                    keepAlive = _keepAlive.value
+                )
+                mcpServerDao.insertServer(entity)
+            }
             onSuccess()
         }
     }

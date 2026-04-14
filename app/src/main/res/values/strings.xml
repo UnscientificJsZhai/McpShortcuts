@@ -35,6 +35,9 @@
 
     <!-- Add Server Screen -->
     <string name="add_mcp_server">Add MCP Server</string>
+    <string name="edit_mcp_server">Edit MCP Server</string>
+    <string name="edit">Edit</string>
+    <string name="keep_alive">Keep connection alive in background</string>
     <string name="server_name">Server Name</string>
     <string name="server_url">Server URL (SSE)</string>
     <string name="headers_optional">Headers (Optional)</string>
@@ -71,4 +74,10 @@
     <string name="saved_to_pinned">Saved to pinned tools</string>
     <string name="failed_to_call_not_connected">Failed to call tool: Server not connected.</string>
     <string name="failed_to_call_with_message">Failed to call tool: %1$s</string>
+    <string name="ignore_result">Ignore result (Silent execution)</string>
+    <string name="call_success">Call success</string>
+
+    <!-- Background Service -->
+    <string name="foreground_service_notification_title">McpShortcuts Running</string>
+    <string name="foreground_service_notification_text">Maintaining background connection for selected servers</string>
 </resources>

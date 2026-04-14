@@ -42,5 +42,8 @@ data class PinnedToolEntity(
     val label: String,
 
     // 保存时间戳（毫秒）
-    val pinnedAt: Long
+    val pinnedAt: Long,
+
+    // 是否忽略结果（静默执行）
+    val ignoreResult: Boolean = false
 )

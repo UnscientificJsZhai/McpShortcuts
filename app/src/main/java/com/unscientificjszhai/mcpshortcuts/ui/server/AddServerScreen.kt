@@ -1,5 +1,6 @@
 package com.unscientificjszhai.mcpshortcuts.ui.server
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -23,18 +24,28 @@ import com.unscientificjszhai.mcpshortcuts.R
 @Composable
 fun AddServerScreen(
     onBack: () -> Unit,
+    serverId: Long = -1L,
     viewModel: AddServerViewModel = viewModel()
 ) {
+    LaunchedEffect(serverId) {
+        if (serverId != -1L) {
+            viewModel.initData(serverId)
+        }
+    }
+
     val serverName by viewModel.serverName.collectAsState()
     val serverUrl by viewModel.serverUrl.collectAsState()
     val headers by viewModel.headers.collectAsState()
+    val keepAlive by viewModel.keepAlive.collectAsState()
     val isTesting by viewModel.isTesting.collectAsState()
     val testResult by viewModel.testResult.collectAsState()
+
+    val topBarTitle = if (serverId != -1L) stringResource(R.string.edit_mcp_server) else stringResource(R.string.add_mcp_server)
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.add_mcp_server)) },
+                title = { Text(topBarTitle) },
                 // 添加颜色配置以让系统 UI 区域匹配深色/浅色模式
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -144,6 +155,22 @@ fun AddServerScreen(
                         }
                     }
                 }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { viewModel.updateKeepAlive(!keepAlive) }
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = keepAlive,
+                    onCheckedChange = { viewModel.updateKeepAlive(it) }
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.keep_alive))
             }
 
             Row(

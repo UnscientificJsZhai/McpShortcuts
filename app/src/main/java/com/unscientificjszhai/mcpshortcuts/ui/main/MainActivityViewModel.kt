@@ -40,6 +40,8 @@ sealed class ToolCallState {
     object Loading : ToolCallState()
     data class Success(val result: String) : ToolCallState()
     data class Error(val message: String) : ToolCallState()
+    data class SilentSuccess(val message: String) : ToolCallState()
+    data class SilentError(val message: String) : ToolCallState()
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -99,20 +101,33 @@ class MainActivityViewModel @Inject constructor(
      */
     fun callPinnedTool(pinned: PinnedToolEntity) {
         viewModelScope.launch {
-            _toolCallState.value = ToolCallState.Loading
+            if (!pinned.ignoreResult) {
+                _toolCallState.value = ToolCallState.Loading
+            }
             try {
                 // 将 JSON 字符串解析为参数 Map
                 val arguments = parseJsonToArguments(pinned.argumentsJson)
                 val result = connectionManager.callTool(pinned.serverId, pinned.toolName, arguments)
                 if (result != null) {
-                    _toolCallState.value = ToolCallState.Success(
-                        result.content.joinToString("\n") { it.toString() }
-                    )
+                    val resultStr = result.content.joinToString("\n") { it.toString() }
+                    if (pinned.ignoreResult) {
+                        _toolCallState.value = ToolCallState.SilentSuccess(resultStr)
+                    } else {
+                        _toolCallState.value = ToolCallState.Success(resultStr)
+                    }
                 } else {
-                    _toolCallState.value = ToolCallState.Error("Failed to call tool: Server not connected.")
+                    if (pinned.ignoreResult) {
+                        _toolCallState.value = ToolCallState.SilentError("Failed to call tool: Server not connected.")
+                    } else {
+                        _toolCallState.value = ToolCallState.Error("Failed to call tool: Server not connected.")
+                    }
                 }
             } catch (e: Exception) {
-                _toolCallState.value = ToolCallState.Error(e.message ?: "Unknown error")
+                if (pinned.ignoreResult) {
+                    _toolCallState.value = ToolCallState.SilentError(e.message ?: "Unknown error")
+                } else {
+                    _toolCallState.value = ToolCallState.Error(e.message ?: "Unknown error")
+                }
             }
         }
     }

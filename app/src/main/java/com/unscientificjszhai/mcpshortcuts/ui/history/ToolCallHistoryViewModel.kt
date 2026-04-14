@@ -95,8 +95,9 @@ class ToolCallHistoryViewModel @Inject constructor(
     /**
      * 将当前历史记录保存为固定工具。
      * @param label 用户自定义标签。
+     * @param ignoreResult 是否忽略调用结果（静默执行）。
      */
-    fun saveAsPinned(label: String) {
+    fun saveAsPinned(label: String, ignoreResult: Boolean = false) {
         val record = _history.value ?: return
         viewModelScope.launch {
             pinnedToolDao.insertPinnedTool(
@@ -106,7 +107,8 @@ class ToolCallHistoryViewModel @Inject constructor(
                     toolDescription = record.toolDescription,
                     argumentsJson = record.argumentsJson,
                     label = label.ifBlank { record.toolName },
-                    pinnedAt = System.currentTimeMillis()
+                    pinnedAt = System.currentTimeMillis(),
+                    ignoreResult = ignoreResult
                 )
             )
             _savedAsPinned.value = true

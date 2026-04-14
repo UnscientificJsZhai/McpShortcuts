@@ -25,7 +25,9 @@ object DatabaseModule {
             context,
             McpDatabase::class.java,
             "mcp_shortcuts.db"
-        ).build()
+        )
+            .fallbackToDestructiveMigration(dropAllTables = true)
+            .build()
     }
 
     @Provides

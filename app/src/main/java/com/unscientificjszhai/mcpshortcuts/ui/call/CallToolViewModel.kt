@@ -93,7 +93,7 @@ class CallToolViewModel @Inject constructor(
     fun callToolWithJson(jsonString: String) {
         viewModelScope.launch {
             _toolCallState.value = ToolCallState.Loading
-            lastArgumentsJson = if (jsonString.isBlank()) "{}" else jsonString
+            lastArgumentsJson = jsonString.ifBlank { "{}" }
             try {
                 val arguments = if (jsonString.isNotBlank()) {
                     val element = json.parseToJsonElement(jsonString)
@@ -175,7 +175,7 @@ class CallToolViewModel @Inject constructor(
                 }
             }
             jsonObject.toString()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             "{}"
         }
     }
