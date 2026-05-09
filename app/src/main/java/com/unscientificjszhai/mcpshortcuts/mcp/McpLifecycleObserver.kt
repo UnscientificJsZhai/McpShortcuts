@@ -13,6 +13,14 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * MCP 生命周期观察者。
+ * 监听应用的生命周期事件，以便在应用进入后台时启动保活服务，并在回到前台时停止服务并恢复连接。
+ *
+ * @property context 应用上下文。
+ * @property connectionManager MCP 连接管理器。
+ * @property serverDao 用于查询服务器配置的 DAO。
+ */
 @Singleton
 class McpLifecycleObserver @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -32,14 +40,14 @@ class McpLifecycleObserver @Inject constructor(
         super.onStop(owner)
         // 应用进入后台：检查是否有必须保活的服务器
         CoroutineScope(Dispatchers.IO).launch {
-            Log.e("McpLifecycleObserver", "onStop: ", )
+            Log.e("McpLifecycleObserver", "onStop: ")
             try {
                 val servers = serverDao.getAllServers().first()
                 val hasKeepAlive = servers.any { it.keepAlive }
                 if (hasKeepAlive) {
                     McpForegroundService.start(context)
                 }
-                
+
                 // 通知连接管理器主动断开 keepAlive = false 的服务器释放资源
                 connectionManager.onAppBackgrounded(servers)
             } catch (e: Exception) {

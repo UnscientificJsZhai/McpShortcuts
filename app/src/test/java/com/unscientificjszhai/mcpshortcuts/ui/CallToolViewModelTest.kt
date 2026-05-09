@@ -1,5 +1,6 @@
 package com.unscientificjszhai.mcpshortcuts.ui
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import com.unscientificjszhai.mcpshortcuts.data.database.dao.PinnedToolDao
 import com.unscientificjszhai.mcpshortcuts.data.database.dao.ToolCacheDao
@@ -23,6 +24,7 @@ import org.mockito.kotlin.*
 class CallToolViewModelTest {
 
     private lateinit var viewModel: CallToolViewModel
+    private val context: Context = mock()
     private val toolCacheDao: ToolCacheDao = mock()
     private val toolCallHistoryDao: ToolCallHistoryDao = mock()
     private val pinnedToolDao: PinnedToolDao = mock()
@@ -36,6 +38,10 @@ class CallToolViewModelTest {
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+
+        whenever(context.getString(any())).thenReturn("Mocked string")
+        whenever(context.getString(any(), any())).thenReturn("Mocked string")
+        whenever(context.getString(any(), any(), any())).thenReturn("Mocked string")
         
         val savedStateHandle = SavedStateHandle(mapOf("serverId" to serverId, "toolName" to toolName))
         
@@ -44,6 +50,7 @@ class CallToolViewModelTest {
         }
         
         viewModel = CallToolViewModel(
+            context,
             toolCacheDao,
             toolCallHistoryDao,
             pinnedToolDao,
@@ -71,7 +78,7 @@ class CallToolViewModelTest {
         
         val state = viewModel.toolCallState.value
         assert(state is ToolCallState.Success)
-        assertEquals("TextContent(text=Success result)", (state as ToolCallState.Success).result)
+        assertEquals("TextContent(text=Success result, annotations=null, meta=null)", (state as ToolCallState.Success).result)
     }
 
     @Test
@@ -94,6 +101,6 @@ class CallToolViewModelTest {
         
         val state = viewModel.toolCallState.value
         assert(state is ToolCallState.Error)
-        assert((state as ToolCallState.Error).message.contains("JSON parsing error"))
+        assert((state as ToolCallState.Error).message.contains("Mocked string"))
     }
 }

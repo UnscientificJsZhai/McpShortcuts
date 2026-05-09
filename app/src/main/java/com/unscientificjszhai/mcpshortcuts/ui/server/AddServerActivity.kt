@@ -4,9 +4,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.unscientificjszhai.mcpshortcuts.ui.theme.McpShortcutsTheme
+import com.unscientificjszhai.mcpshortcuts.ui.theme.CustomAppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
+/**
+ * 添加或编辑 MCP 服务器的 Activity。
+ */
 @AndroidEntryPoint
 class AddServerActivity : ComponentActivity() {
 
@@ -16,7 +19,7 @@ class AddServerActivity : ComponentActivity() {
         enableEdgeToEdge()
         val serverId = intent.getLongExtra("serverId", -1L)
         setContent {
-            McpShortcutsTheme {
+            CustomAppTheme {
                 AddServerScreen(
                     onBack = { finish() },
                     serverId = serverId

@@ -52,6 +52,13 @@ import java.util.Date
 import java.util.Locale
 
 
+/**
+ * 工具调用历史详情屏幕。
+ * 展示历史调用的参数、结果，并允许用户再次调用或将其保存为固定工具。
+ *
+ * @param viewModel 用于管理历史记录逻辑的 ViewModel。
+ * @param onBack 点击返回按钮时的回调。
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ToolCallHistoryScreen(
@@ -319,6 +326,9 @@ fun ToolCallHistoryScreen(
 
 /**
  * 简单格式化 JSON 字符串，增加缩进使其更易读。
+ *
+ * @param json 要格式化的原始 JSON 字符串。
+ * @return 格式化后的 JSON 字符串。
  */
 private fun formatJson(json: String): String {
     return try {
@@ -358,7 +368,7 @@ private fun formatJson(json: String): String {
             }
         }
         sb.toString()
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         json
     }
 }

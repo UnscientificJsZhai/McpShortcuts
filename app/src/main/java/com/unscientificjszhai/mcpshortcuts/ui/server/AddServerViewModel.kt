@@ -2,7 +2,6 @@ package com.unscientificjszhai.mcpshortcuts.ui.server
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.gson.Gson
 import com.unscientificjszhai.mcpshortcuts.data.ServerHeader
 import com.unscientificjszhai.mcpshortcuts.data.database.dao.McpServerDao
 import com.unscientificjszhai.mcpshortcuts.data.database.entity.McpServerEntity
@@ -18,44 +17,73 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
 
-sealed class TestResult {
-    object Connecting : TestResult()
-    data class Success(val toolNames: String) : TestResult()
-    object Timeout : TestResult()
-    data class Error(val message: String?) : TestResult()
-    object UrlEmpty : TestResult()
-}
-
+/**
+ * 添加或编辑服务器界面的 ViewModel。
+ *
+ * @property mcpServerDao 用于访问服务器数据的 DAO。
+ */
 @HiltViewModel
 class AddServerViewModel @Inject constructor(
     private val mcpServerDao: McpServerDao
 ) : ViewModel() {
 
     private val _serverName = MutableStateFlow("")
+
+    /**
+     * 输入的服务器名称。
+     */
     val serverName: StateFlow<String> = _serverName.asStateFlow()
 
     private val _serverUrl = MutableStateFlow("")
+
+    /**
+     * 输入的服务器 URL。
+     */
     val serverUrl: StateFlow<String> = _serverUrl.asStateFlow()
 
     private val _headers = MutableStateFlow<List<ServerHeader>>(emptyList())
+
+    /**
+     * 配置的 HTTP 请求头列表。
+     */
     val headers: StateFlow<List<ServerHeader>> = _headers.asStateFlow()
 
     private val _keepAlive = MutableStateFlow(false)
+
+    /**
+     * 是否保持连接活跃。
+     */
     val keepAlive: StateFlow<Boolean> = _keepAlive.asStateFlow()
 
     private val _isTesting = MutableStateFlow(false)
+
+    /**
+     * 是否正在执行连接测试。
+     */
     val isTesting: StateFlow<Boolean> = _isTesting.asStateFlow()
 
     private val _testResult = MutableStateFlow<TestResult?>(null)
+
+    /**
+     * 连接测试的结果。
+     */
     val testResult: StateFlow<TestResult?> = _testResult.asStateFlow()
 
-    private val gson = Gson()
-    
+    private val json = Json {
+        ignoreUnknownKeys = true
+    }
+
     private var currentServerId: Long? = null
 
+    /**
+     * 初始化数据，如果是编辑模式则从数据库加载已有信息。
+     *
+     * @param serverId 服务器 ID。
+     */
     fun initData(serverId: Long) {
         if (serverId != -1L && currentServerId != serverId) {
             currentServerId = serverId
@@ -67,8 +95,7 @@ class AddServerViewModel @Inject constructor(
                     _keepAlive.value = server.keepAlive
                     if (!server.headersJson.isNullOrBlank()) {
                         try {
-                            val mapType = object : com.google.gson.reflect.TypeToken<Map<String, String>>() {}.type
-                            val map: Map<String, String> = gson.fromJson(server.headersJson, mapType)
+                            val map: Map<String, String> = json.decodeFromString(server.headersJson)
                             _headers.value = map.map { ServerHeader(it.key, it.value) }
                         } catch (e: Exception) {
                             e.printStackTrace()
@@ -79,22 +106,45 @@ class AddServerViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 更新服务器名称。
+     *
+     * @param name 新名称。
+     */
     fun updateServerName(name: String) {
         _serverName.value = name
     }
 
+    /**
+     * 更新服务器 URL。
+     *
+     * @param url 新 URL。
+     */
     fun updateServerUrl(url: String) {
         _serverUrl.value = url
     }
 
+    /**
+     * 设置是否保持连接。
+     *
+     * @param keepAlive 是否保持连接。
+     */
     fun updateKeepAlive(keepAlive: Boolean) {
         _keepAlive.value = keepAlive
     }
 
+    /**
+     * 添加一个新的空请求头。
+     */
     fun addHeader() {
-        _headers.value = _headers.value + ServerHeader("", "")
+        _headers.value += ServerHeader("", "")
     }
 
+    /**
+     * 移除指定索引的请求头。
+     *
+     * @param index 要移除的索引。
+     */
     fun removeHeader(index: Int) {
         val current = _headers.value.toMutableList()
         if (index in current.indices) {
@@ -103,6 +153,13 @@ class AddServerViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 更新指定索引的请求头。
+     *
+     * @param index 要更新的索引。
+     * @param key 新的键。
+     * @param value 新的值。
+     */
     fun updateHeader(index: Int, key: String, value: String) {
         val current = _headers.value.toMutableList()
         if (index in current.indices) {
@@ -111,6 +168,9 @@ class AddServerViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 测试当前配置的服务器连接。
+     */
     fun testConnection() {
         val url = _serverUrl.value
         if (url.isBlank()) {
@@ -121,7 +181,7 @@ class AddServerViewModel @Inject constructor(
         viewModelScope.launch {
             _isTesting.value = true
             _testResult.value = TestResult.Connecting
-            
+
             val headerMap = _headers.value
                 .filter { it.key.isNotBlank() }
                 .associate { it.key to it.value }
@@ -133,7 +193,7 @@ class AddServerViewModel @Inject constructor(
                     }
                 }
             }
-            
+
             try {
                 withTimeout(15.seconds) {
                     val client = Client(
@@ -152,7 +212,7 @@ class AddServerViewModel @Inject constructor(
                         client.close()
                     }
                 }
-            } catch (e: TimeoutCancellationException) {
+            } catch (_: TimeoutCancellationException) {
                 _testResult.value = TestResult.Timeout
             } catch (e: Exception) {
                 _testResult.value = TestResult.Error(e.message)
@@ -163,6 +223,11 @@ class AddServerViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 保存当前服务器配置到数据库。
+     *
+     * @param onSuccess 成功保存后的回调。
+     */
     fun saveServer(onSuccess: () -> Unit) {
         val name = _serverName.value
         val url = _serverUrl.value
@@ -176,7 +241,7 @@ class AddServerViewModel @Inject constructor(
             .associate { it.key to it.value }
 
         val headersJson = if (headerMap.isNotEmpty()) {
-            gson.toJson(headerMap)
+            json.encodeToString(headerMap)
         } else {
             null
         }

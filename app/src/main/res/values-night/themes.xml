@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.McpShortcuts" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- 如果没有动态颜色，这些是回退颜色 -->
+        <item name="colorPrimary">@color/sky_blue_80</item>
+        <item name="colorOnPrimary">@color/black</item>
+        <item name="colorSecondary">@color/sky_blue_grey_80</item>
+        <item name="colorTertiary">@color/sky_blue_pink_80</item>
+        <item name="colorPrimaryContainer">@color/sky_blue_pink_40</item>
+        <item name="colorOnPrimaryContainer">@color/white</item>
+    </style>
+</resources>

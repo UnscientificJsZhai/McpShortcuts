@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.unscientificjszhai.mcpshortcuts.ui.theme.McpShortcutsTheme
+import com.unscientificjszhai.mcpshortcuts.ui.theme.CustomAppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
@@ -17,7 +17,7 @@ class ToolCallHistoryActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            McpShortcutsTheme {
+            CustomAppTheme {
                 ToolCallHistoryScreen(onBack = { finish() })
             }
         }

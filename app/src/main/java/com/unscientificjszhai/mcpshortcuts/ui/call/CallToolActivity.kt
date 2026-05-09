@@ -43,36 +43,46 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.ui.res.stringResource
 import com.unscientificjszhai.mcpshortcuts.R
 import com.unscientificjszhai.mcpshortcuts.data.ToolInputSchema
 import com.unscientificjszhai.mcpshortcuts.data.database.entity.ToolCacheEntity
 import com.unscientificjszhai.mcpshortcuts.ui.main.ToolCallState
-import com.unscientificjszhai.mcpshortcuts.ui.theme.McpShortcutsTheme
+import com.unscientificjszhai.mcpshortcuts.ui.theme.CustomAppTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.serialization.json.Json
 
+/**
+ * 调用工具的 Activity。
+ * 该 Activity 负责承载工具调用的界面。
+ */
 @AndroidEntryPoint
 class CallToolActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            McpShortcutsTheme {
+            CustomAppTheme {
                 CallToolScreen(onBack = { finish() })
             }
         }
     }
 }
 
+/**
+ * 工具调用屏幕的 Compose 实现。
+ *
+ * @param viewModel 用于管理工具调用逻辑的 ViewModel。
+ * @param onBack 点击返回按钮时的回调。
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CallToolScreen(viewModel: CallToolViewModel = viewModel(), onBack: () -> Unit) {
     val tool by viewModel.tool.collectAsState()
     val toolCallState by viewModel.toolCallState.collectAsState()
-    
+
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf(stringResource(R.string.tab_parsed), stringResource(R.string.tab_json))
 
@@ -92,7 +102,10 @@ fun CallToolScreen(viewModel: CallToolViewModel = viewModel(), onBack: () -> Uni
                 ),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back)
+                        )
                     }
                 }
             )
@@ -136,6 +149,7 @@ fun CallToolScreen(viewModel: CallToolViewModel = viewModel(), onBack: () -> Uni
                         tool = tool,
                         onArgumentsChanged = { parsedArguments.value = it }
                     )
+
                     1 -> JsonTab(
                         jsonInput = jsonInput,
                         onJsonInputChanged = { jsonInput = it }
@@ -159,11 +173,12 @@ fun CallToolScreen(viewModel: CallToolViewModel = viewModel(), onBack: () -> Uni
                 confirmButton = { }
             )
         }
+
         is ToolCallState.Success -> {
             AlertDialog(
                 onDismissRequest = { viewModel.clearToolCallState() },
                 title = { Text(stringResource(R.string.call_result)) },
-                text = { 
+                text = {
                     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                         Text(state.result)
                     }
@@ -175,6 +190,7 @@ fun CallToolScreen(viewModel: CallToolViewModel = viewModel(), onBack: () -> Uni
                 }
             )
         }
+
         is ToolCallState.Error -> {
             AlertDialog(
                 onDismissRequest = { viewModel.clearToolCallState() },
@@ -187,13 +203,23 @@ fun CallToolScreen(viewModel: CallToolViewModel = viewModel(), onBack: () -> Uni
                 }
             )
         }
+
         is ToolCallState.SilentSuccess, is ToolCallState.SilentError -> {
             viewModel.clearToolCallState()
         }
-        ToolCallState.Idle -> { /* Do nothing */ }
+
+        ToolCallState.Idle -> { /* Do nothing */
+        }
     }
 }
 
+/**
+ * 解析参数标签页。
+ * 根据工具的输入 Schema 生成动态表单供用户填写。
+ *
+ * @param tool 缓存的工具实体信息。
+ * @param onArgumentsChanged 当用户输入的参数发生变化时的回调。
+ */
 @Composable
 fun ParsedTab(tool: ToolCacheEntity?, onArgumentsChanged: (Map<String, Any?>) -> Unit) {
     if (tool == null) {
@@ -205,7 +231,7 @@ fun ParsedTab(tool: ToolCacheEntity?, onArgumentsChanged: (Map<String, Any?>) ->
 
     val json = remember { Json { ignoreUnknownKeys = true } }
     var parseError by remember { mutableStateOf<String?>(null) }
-    
+
     val schema = remember(tool.inputSchema) {
         try {
             if (tool.inputSchema != null) {
@@ -219,20 +245,32 @@ fun ParsedTab(tool: ToolCacheEntity?, onArgumentsChanged: (Map<String, Any?>) ->
             null
         }
     }
-    
+
     if (schema == null && tool.inputSchema != null && parseError == "placeholder") {
-        parseError = stringResource(R.string.parse_error, "Invalid Schema")
+        parseError = stringResource(R.string.parse_error, stringResource(R.string.invalid_schema))
     }
 
     if (parseError != null) {
-        Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
-            // 使用语义化颜色替代硬编码 Color.Red
-            Text(text = parseError!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyLarge)
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp), contentAlignment = Alignment.Center) {
+            Text(
+                text = parseError ?: "",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyLarge
+            )
         }
         return
     }
 
-    // Pre-parse properties for rendering
+    /**
+     * 属性信息包装类。
+     *
+     * @property name 属性在 JSON 中的键名。
+     * @property type 属性的类型。
+     * @property description 属性的描述。
+     * @property label 界面上显示的标签文本。
+     */
     data class PropertyInfo(
         val name: String,
         val type: String,
@@ -251,15 +289,20 @@ fun ParsedTab(tool: ToolCacheEntity?, onArgumentsChanged: (Map<String, Any?>) ->
         } ?: emptyList()
     }
 
-    val inputValues = remember(schema) { 
+    val inputValues = remember(schema) {
         val map = mutableMapOf<String, String>()
         schema?.properties?.keys?.forEach { name ->
-             map[name] = ""
+            map[name] = ""
         }
-        mutableStateOf(map as Map<String,String>)
+        mutableStateOf(map as Map<String, String>)
     }
 
-    // Function to extract result arguments from input values
+    /**
+     * 从输入值中提取结果参数。
+     *
+     * @param inputs 当前输入的字符串 Map。
+     * @return 解析后的参数 Map。
+     */
     fun getResultArgs(inputs: Map<String, String>): Map<String, Any?> {
         val resultArgs = mutableMapOf<String, Any?>()
         propertyInfos.forEach { info ->
@@ -309,6 +352,7 @@ fun ParsedTab(tool: ToolCacheEntity?, onArgumentsChanged: (Map<String, Any?>) ->
                             Text(text = info.label)
                         }
                     }
+
                     else -> {
                         OutlinedTextField(
                             value = inputValues.value[info.name] ?: "",
@@ -328,6 +372,13 @@ fun ParsedTab(tool: ToolCacheEntity?, onArgumentsChanged: (Map<String, Any?>) ->
     }
 }
 
+/**
+ * JSON 原始输入标签页。
+ * 提供一个文本域供用户直接编写 JSON 格式的调用参数。
+ *
+ * @param jsonInput 当前的 JSON 输入字符串。
+ * @param onJsonInputChanged 当 JSON 输入内容发生变化时的回调。
+ */
 @Composable
 fun JsonTab(jsonInput: String, onJsonInputChanged: (String) -> Unit) {
     Column(

@@ -3,6 +3,8 @@ package com.unscientificjszhai.mcpshortcuts.di
 import android.content.Context
 import androidx.room.Room
 import com.unscientificjszhai.mcpshortcuts.data.database.McpDatabase
+import com.unscientificjszhai.mcpshortcuts.data.database.dao.ChatMessageDao
+import com.unscientificjszhai.mcpshortcuts.data.database.dao.ChatSessionDao
 import com.unscientificjszhai.mcpshortcuts.data.database.dao.McpServerDao
 import com.unscientificjszhai.mcpshortcuts.data.database.dao.PinnedToolDao
 import com.unscientificjszhai.mcpshortcuts.data.database.dao.ToolCacheDao
@@ -48,5 +50,15 @@ object DatabaseModule {
     @Provides
     fun providePinnedToolDao(database: McpDatabase): PinnedToolDao {
         return database.pinnedToolDao()
+    }
+
+    @Provides
+    fun provideChatSessionDao(database: McpDatabase): ChatSessionDao {
+        return database.chatSessionDao()
+    }
+
+    @Provides
+    fun provideChatMessageDao(database: McpDatabase): ChatMessageDao {
+        return database.chatMessageDao()
     }
 }

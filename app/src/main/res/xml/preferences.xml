@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <SwitchPreferenceCompat
+        app:key="enable_ai_features"
+        app:title="@string/pref_title_enable_ai"
+        app:summary="@string/pref_summary_enable_ai"
+        app:defaultValue="false" />
+
+    <EditTextPreference
+        app:key="openai_api_url"
+        app:title="@string/pref_title_openai_url"
+        app:useSimpleSummaryProvider="true"
+        app:dependency="enable_ai_features"
+        app:defaultValue="https://api.openai.com/v1" />
+
+    <EditTextPreference
+        app:key="openai_api_headers"
+        app:title="@string/pref_title_openai_headers"
+        app:summary="@string/pref_summary_openai_headers"
+        app:dependency="enable_ai_features" />
+
+    <EditTextPreference
+        app:key="openai_system_prompt"
+        app:title="@string/pref_title_openai_system_prompt"
+        app:dependency="enable_ai_features" />
+
+</PreferenceScreen>

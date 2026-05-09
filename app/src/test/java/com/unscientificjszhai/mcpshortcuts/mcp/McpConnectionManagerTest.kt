@@ -25,13 +25,14 @@ class McpConnectionManagerTest {
     private val serverDao: McpServerDao = mock()
     private val toolCacheDao: ToolCacheDao = mock()
     private val clientFactory: McpClientFactory = mock()
-    
+    private val notificationManager: McpNotificationManager = mock()
+
     private val httpClient = HttpClient(MockEngine { respondOk() })
 
     @Before
     fun setup() {
         whenever(serverDao.getAllServers()).thenReturn(flowOf(emptyList()))
-        manager = McpConnectionManager(httpClient, serverDao, toolCacheDao, clientFactory)
+        manager = McpConnectionManager(httpClient, serverDao, toolCacheDao, clientFactory, notificationManager)
     }
 
     @Test

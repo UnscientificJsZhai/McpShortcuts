@@ -3,10 +3,10 @@ package com.unscientificjszhai.mcpshortcuts.ui.call
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.unscientificjszhai.mcpshortcuts.R
 import com.unscientificjszhai.mcpshortcuts.data.database.dao.PinnedToolDao
 import com.unscientificjszhai.mcpshortcuts.data.database.dao.ToolCacheDao
 import com.unscientificjszhai.mcpshortcuts.data.database.dao.ToolCallHistoryDao
-import com.unscientificjszhai.mcpshortcuts.data.database.entity.PinnedToolEntity
 import com.unscientificjszhai.mcpshortcuts.data.database.entity.ToolCacheEntity
 import com.unscientificjszhai.mcpshortcuts.data.database.entity.ToolCallHistoryEntity
 import com.unscientificjszhai.mcpshortcuts.mcp.McpConnectionManager
@@ -28,8 +28,19 @@ import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.put
 import javax.inject.Inject
 
+/**
+ * 调用工具的 ViewModel。
+ * 负责加载工具信息、处理调用逻辑、保存历史记录和固定工具。
+ *
+ * @property toolCacheDao 用于访问缓存工具数据的 DAO。
+ * @property toolCallHistoryDao 用于访问调用历史数据的 DAO。
+ * @property pinnedToolDao 用于访问固定工具数据的 DAO。
+ * @property connectionManager 用于管理 MCP 连接和执行调用的管理器。
+ * @param savedStateHandle 用于获取 Activity 传递的参数。
+ */
 @HiltViewModel
 class CallToolViewModel @Inject constructor(
+    @param:dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val toolCacheDao: ToolCacheDao,
     private val toolCallHistoryDao: ToolCallHistoryDao,
     private val pinnedToolDao: PinnedToolDao,
@@ -41,9 +52,17 @@ class CallToolViewModel @Inject constructor(
     private val toolName: String = savedStateHandle.get<String>("toolName") ?: ""
 
     private val _tool = MutableStateFlow<ToolCacheEntity?>(null)
+
+    /**
+     * 当前选中的工具信息。
+     */
     val tool: StateFlow<ToolCacheEntity?> = _tool.asStateFlow()
 
     private val _toolCallState = MutableStateFlow<ToolCallState>(ToolCallState.Idle)
+
+    /**
+     * 当前工具调用的状态。
+     */
     val toolCallState: StateFlow<ToolCallState> = _toolCallState.asStateFlow()
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -58,6 +77,9 @@ class CallToolViewModel @Inject constructor(
         loadTool()
     }
 
+    /**
+     * 从数据库加载工具详情。
+     */
     private fun loadTool() {
         viewModelScope.launch {
             if (serverId != -1L && toolName.isNotEmpty()) {
@@ -66,6 +88,11 @@ class CallToolViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 调用工具。
+     *
+     * @param arguments 调用工具所需的参数 Map。
+     */
     fun callTool(arguments: Map<String, Any?>?) {
         viewModelScope.launch {
             _toolCallState.value = ToolCallState.Loading
@@ -82,14 +109,19 @@ class CallToolViewModel @Inject constructor(
                     saveHistory(argsJson, resultStr)
                 } else {
                     _toolCallState.value =
-                        ToolCallState.Error("Failed to call tool: Server not connected.")
+                        ToolCallState.Error(context.getString(R.string.failed_to_call_not_connected))
                 }
             } catch (e: Exception) {
-                _toolCallState.value = ToolCallState.Error(e.message ?: "Unknown error")
+                _toolCallState.value = ToolCallState.Error(e.message ?: context.getString(R.string.unknown_error))
             }
         }
     }
 
+    /**
+     * 使用 JSON 字符串调用工具。
+     *
+     * @param jsonString 包含调用参数的 JSON 字符串。
+     */
     fun callToolWithJson(jsonString: String) {
         viewModelScope.launch {
             _toolCallState.value = ToolCallState.Loading
@@ -100,7 +132,7 @@ class CallToolViewModel @Inject constructor(
                     if (element is JsonObject) {
                         jsonElementToMap(element) as? Map<String, Any?>
                     } else {
-                        throw IllegalArgumentException("Input must be a JSON object")
+                        throw IllegalArgumentException(context.getString(R.string.input_must_be_json_object))
                     }
                 } else {
                     null
@@ -115,16 +147,19 @@ class CallToolViewModel @Inject constructor(
                     saveHistory(lastArgumentsJson, resultStr)
                 } else {
                     _toolCallState.value =
-                        ToolCallState.Error("Failed to call tool: Server not connected.")
+                        ToolCallState.Error(context.getString(R.string.failed_to_call_not_connected))
                 }
             } catch (e: Exception) {
-                _toolCallState.value = ToolCallState.Error("JSON parsing error: ${e.message}")
+                _toolCallState.value = ToolCallState.Error(context.getString(R.string.json_parsing_error, e.message ?: ""))
             }
         }
     }
 
     /**
      * 将调用记录保存到历史表中。
+     *
+     * @param argsJson 调用时使用的参数 JSON。
+     * @param resultJson 调用返回的结果 JSON。
      */
     private suspend fun saveHistory(argsJson: String, resultJson: String) {
         val currentTool = _tool.value ?: return
@@ -141,25 +176,11 @@ class CallToolViewModel @Inject constructor(
     }
 
     /**
-     * 将当前工具和最后使用的参数保存为固定工具。
-     * @param label 用户自定义标签，默认使用工具名。
+     * 将参数 Map 转换为 JSON 字符串。
+     *
+     * @param arguments 参数 Map。
+     * @return 转换后的 JSON 字符串。
      */
-    fun saveAsPinned(label: String) {
-        viewModelScope.launch {
-            val currentTool = _tool.value ?: return@launch
-            pinnedToolDao.insertPinnedTool(
-                PinnedToolEntity(
-                    serverId = serverId,
-                    toolName = toolName,
-                    toolDescription = currentTool.description,
-                    argumentsJson = lastArgumentsJson,
-                    label = label.ifBlank { toolName },
-                    pinnedAt = System.currentTimeMillis()
-                )
-            )
-        }
-    }
-
     private fun argumentsToJson(arguments: Map<String, Any?>?): String {
         if (arguments.isNullOrEmpty()) return "{}"
         return try {
@@ -180,6 +201,12 @@ class CallToolViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 将 JsonElement 转换为对应的 Kotlin 类型（Map, List, Primitive）。
+     *
+     * @param element 要转换的 JsonElement。
+     * @return 转换后的 Kotlin 对象。
+     */
     private fun jsonElementToMap(element: JsonElement): Any? {
         return when (element) {
             is JsonPrimitive -> {
@@ -194,10 +221,9 @@ class CallToolViewModel @Inject constructor(
         }
     }
 
-    private fun jsonObjectToMap(jsonObject: JsonObject): Map<String, Any?> {
-        return jsonElementToMap(jsonObject) as Map<String, Any?>
-    }
-
+    /**
+     * 清除当前的工具调用状态。
+     */
     fun clearToolCallState() {
         _toolCallState.value = ToolCallState.Idle
     }

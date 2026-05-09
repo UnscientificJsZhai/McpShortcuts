@@ -1,5 +1,6 @@
 package com.unscientificjszhai.mcpshortcuts.ui
 
+import android.content.Context
 import com.unscientificjszhai.mcpshortcuts.data.database.dao.McpServerDao
 import com.unscientificjszhai.mcpshortcuts.data.database.dao.PinnedToolDao
 import com.unscientificjszhai.mcpshortcuts.data.database.dao.ToolCacheDao
@@ -26,6 +27,7 @@ import org.mockito.kotlin.*
 class MainViewModelTest {
 
     private lateinit var viewModel: MainActivityViewModel
+    private val context: Context = mock()
     private val serverDao: McpServerDao = mock()
     private val toolCacheDao: ToolCacheDao = mock()
     private val toolCallHistoryDao: ToolCallHistoryDao = mock()
@@ -39,6 +41,8 @@ class MainViewModelTest {
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+
+        whenever(context.getString(any())).thenReturn("Mocked string")
         
         whenever(serverDao.getAllServers()).thenReturn(serversFlow)
         whenever(connectionManager.clients).thenReturn(clientsFlow)
@@ -46,6 +50,7 @@ class MainViewModelTest {
         whenever(pinnedToolDao.getAllPinnedTools()).thenReturn(flowOf(emptyList()))
         
         viewModel = MainActivityViewModel(
+            context,
             serverDao,
             toolCacheDao,
             toolCallHistoryDao,

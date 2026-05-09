@@ -9,7 +9,10 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.sse.SSE
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.json.Json
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
@@ -34,6 +37,14 @@ abstract class McpModule {
                     }
                 }
                 install(SSE)
+                install(ContentNegotiation) {
+                    json(Json {
+                        ignoreUnknownKeys = true
+                        prettyPrint = true
+                        isLenient = true
+                        encodeDefaults = true
+                    })
+                }
             }
         }
     }

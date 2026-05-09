@@ -9,9 +9,16 @@ import android.os.IBinder
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
+/**
+ * 用于保持 MCP 连接的前台服务。
+ * 当应用进入后台且存在需要保持连接的服务器时启动。
+ */
 @AndroidEntryPoint
 class McpForegroundService : Service() {
 
+    /**
+     * 通知管理器。
+     */
     @Inject
     lateinit var notificationManager: McpNotificationManager
 
@@ -19,6 +26,11 @@ class McpForegroundService : Service() {
         private const val ACTION_START = "ACTION_START"
         private const val ACTION_STOP = "ACTION_STOP"
 
+        /**
+         * 启动前台服务。
+         *
+         * @param context 上下文。
+         */
         fun start(context: Context) {
             val intent = Intent(context, McpForegroundService::class.java).apply {
                 action = ACTION_START
@@ -26,6 +38,11 @@ class McpForegroundService : Service() {
             context.startForegroundService(intent)
         }
 
+        /**
+         * 停止前台服务。
+         *
+         * @param context 上下文。
+         */
         fun stop(context: Context) {
             val intent = Intent(context, McpForegroundService::class.java).apply {
                 action = ACTION_STOP
@@ -42,12 +59,15 @@ class McpForegroundService : Service() {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                         // Android 14+ requires specific foreground service type
                         startForeground(
-                            McpNotificationManager.FOREGROUND_SERVICE_NOTIFICATION_ID, 
-                            notification, 
+                            McpNotificationManager.FOREGROUND_SERVICE_NOTIFICATION_ID,
+                            notification,
                             ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
                         )
                     } else {
-                        startForeground(McpNotificationManager.FOREGROUND_SERVICE_NOTIFICATION_ID, notification)
+                        startForeground(
+                            McpNotificationManager.FOREGROUND_SERVICE_NOTIFICATION_ID,
+                            notification
+                        )
                     }
                 } catch (e: Exception) {
                     // Fail gracefully if permissions missing (e.g. Android 14 requirements)
@@ -55,6 +75,7 @@ class McpForegroundService : Service() {
                     stopSelf()
                 }
             }
+
             ACTION_STOP -> {
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()

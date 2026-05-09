@@ -2,7 +2,7 @@ package com.unscientificjszhai.mcpshortcuts.ui.server
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
-import com.unscientificjszhai.mcpshortcuts.ui.theme.McpShortcutsTheme
+import com.unscientificjszhai.mcpshortcuts.ui.theme.CustomAppTheme
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Before
@@ -26,7 +26,7 @@ class AddServerScreenTest {
     @Test
     fun testAddServerScreen_InputAndSaveEnabled() {
         composeTestRule.setContent {
-            McpShortcutsTheme {
+            CustomAppTheme {
                 AddServerScreen(onBack = {})
             }
         }
@@ -50,7 +50,7 @@ class AddServerScreenTest {
     @Test
     fun testAddServerScreen_AddHeader() {
         composeTestRule.setContent {
-            McpShortcutsTheme {
+            CustomAppTheme {
                 AddServerScreen(onBack = {})
             }
         }

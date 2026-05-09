@@ -6,7 +6,7 @@ import com.unscientificjszhai.mcpshortcuts.ui.main.ServerItem
 import com.unscientificjszhai.mcpshortcuts.data.database.entity.McpServerEntity
 import com.unscientificjszhai.mcpshortcuts.mcp.McpClientState
 import com.unscientificjszhai.mcpshortcuts.ui.main.ServerWithTools
-import com.unscientificjszhai.mcpshortcuts.ui.theme.McpShortcutsTheme
+import com.unscientificjszhai.mcpshortcuts.ui.theme.CustomAppTheme
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import org.junit.Rule
@@ -28,12 +28,13 @@ class ServerItemTest {
         var updateClicked = false
 
         composeTestRule.setContent {
-            McpShortcutsTheme {
+            CustomAppTheme {
                 ServerItem(
                     item = item,
                     onRetry = {},
                     onUpdateTools = { updateClicked = true },
                     onToolClick = {},
+                    onEditClick = {},
                     onDeleteClick = {}
                 )
             }
@@ -59,12 +60,13 @@ class ServerItemTest {
         val item = ServerWithTools(server, state, emptyList())
 
         composeTestRule.setContent {
-            McpShortcutsTheme {
+            CustomAppTheme {
                 ServerItem(
                     item = item,
                     onRetry = {},
                     onUpdateTools = {},
                     onToolClick = {},
+                    onEditClick = {},
                     onDeleteClick = {}
                 )
             }

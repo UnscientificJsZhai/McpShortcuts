@@ -3,6 +3,7 @@ package com.unscientificjszhai.mcpshortcuts.ui.history
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.unscientificjszhai.mcpshortcuts.R
 import com.unscientificjszhai.mcpshortcuts.data.database.dao.PinnedToolDao
 import com.unscientificjszhai.mcpshortcuts.data.database.dao.ToolCallHistoryDao
 import com.unscientificjszhai.mcpshortcuts.data.database.entity.PinnedToolEntity
@@ -24,8 +25,17 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.doubleOrNull
 import javax.inject.Inject
 
+/**
+ * 工具调用历史记录的 ViewModel。
+ *
+ * @property toolCallHistoryDao 用于访问调用历史数据的 DAO。
+ * @property pinnedToolDao 用于访问固定工具数据的 DAO。
+ * @property connectionManager 用于执行 MCP 工具调用的管理器。
+ * @param savedStateHandle 用于获取 Activity 传递的参数。
+ */
 @HiltViewModel
 class ToolCallHistoryViewModel @Inject constructor(
+    @param:dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val toolCallHistoryDao: ToolCallHistoryDao,
     private val pinnedToolDao: PinnedToolDao,
     private val connectionManager: McpConnectionManager,
@@ -35,13 +45,25 @@ class ToolCallHistoryViewModel @Inject constructor(
     private val historyId: Long = savedStateHandle.get<Long>("historyId") ?: -1L
 
     private val _history = MutableStateFlow<ToolCallHistoryEntity?>(null)
+
+    /**
+     * 当前展示的历史记录实体。
+     */
     val history: StateFlow<ToolCallHistoryEntity?> = _history.asStateFlow()
 
     private val _callState = MutableStateFlow<ToolCallState>(ToolCallState.Idle)
+
+    /**
+     * 再次调用时的调用状态。
+     */
     val callState: StateFlow<ToolCallState> = _callState.asStateFlow()
 
     // 保存成功后通知 UI
     private val _savedAsPinned = MutableStateFlow(false)
+
+    /**
+     * 是否已成功保存为固定工具。
+     */
     val savedAsPinned: StateFlow<Boolean> = _savedAsPinned.asStateFlow()
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -50,6 +72,9 @@ class ToolCallHistoryViewModel @Inject constructor(
         loadHistory()
     }
 
+    /**
+     * 从数据库加载指定的历史记录。
+     */
     private fun loadHistory() {
         viewModelScope.launch {
             if (historyId != -1L) {
@@ -84,16 +109,18 @@ class ToolCallHistoryViewModel @Inject constructor(
                         )
                     )
                 } else {
-                    _callState.value = ToolCallState.Error("Failed to call tool: Server not connected.")
+                    _callState.value =
+                        ToolCallState.Error(context.getString(R.string.failed_to_call_not_connected))
                 }
             } catch (e: Exception) {
-                _callState.value = ToolCallState.Error(e.message ?: "Unknown error")
+                _callState.value = ToolCallState.Error(e.message ?: context.getString(R.string.unknown_error))
             }
         }
     }
 
     /**
      * 将当前历史记录保存为固定工具。
+     *
      * @param label 用户自定义标签。
      * @param ignoreResult 是否忽略调用结果（静默执行）。
      */
@@ -115,16 +142,25 @@ class ToolCallHistoryViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 清除调用状态。
+     */
     fun clearCallState() {
         _callState.value = ToolCallState.Idle
     }
 
+    /**
+     * 重置保存成功标志位。
+     */
     fun resetSavedAsPinned() {
         _savedAsPinned.value = false
     }
 
     /**
      * 将 JSON 字符串解析为调用参数 Map。
+     *
+     * @param jsonString 要解析的 JSON 字符串。
+     * @return 解析后的参数 Map，如果解析失败则返回 null。
      */
     private fun parseJsonToArguments(jsonString: String): Map<String, Any?>? {
         return try {
@@ -132,11 +168,17 @@ class ToolCallHistoryViewModel @Inject constructor(
             if (element is JsonObject) {
                 element.mapValues { jsonElementToValue(it.value) }
             } else null
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
 
+    /**
+     * 将 JsonElement 转换为对应的 Kotlin 类型。
+     *
+     * @param element 要转换的 JsonElement。
+     * @return 转换后的 Kotlin 对象。
+     */
     private fun jsonElementToValue(element: JsonElement): Any? {
         return when (element) {
             is JsonPrimitive -> {
@@ -144,6 +186,7 @@ class ToolCallHistoryViewModel @Inject constructor(
                 else if (element.content == "true" || element.content == "false") element.booleanOrNull
                 else element.doubleOrNull ?: element.content
             }
+
             is JsonObject -> element.mapValues { jsonElementToValue(it.value) }
             is JsonArray -> element.map { jsonElementToValue(it) }
             JsonNull -> null
