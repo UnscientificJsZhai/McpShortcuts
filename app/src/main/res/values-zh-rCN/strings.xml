@@ -114,6 +114,7 @@
     <string name="you">您</string>
     <string name="ai">AI</string>
     <string name="tool_calls">工具调用</string>
+    <string name="tool_call_with_name">工具调用：%1$s</string>
     <string name="execute">执行</string>
     <string name="executing">执行中...</string>
     <string name="hide_results">隐藏结果</string>

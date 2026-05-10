@@ -1,5 +1,6 @@
 package com.unscientificjszhai.mcpshortcuts.ui.chat
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -135,7 +136,10 @@ fun AiDisabledScreen(onGoToSettings: () -> Unit, onBack: () -> Unit) {
                 title = { Text(stringResource(R.string.ai_chat)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.content_desc_back))
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.content_desc_back)
+                        )
                     }
                 }
             )
@@ -515,6 +519,20 @@ private fun getToolCallIds(message: ChatMessageEntity): Set<String> {
 }
 
 /**
+ * 解析消息中的首个工具调用名称。
+ *
+ * @param message 聊天消息实体。
+ * @return 首个工具调用名称，无法提取时返回 null。
+ */
+private fun getToolCallName(message: ChatMessageEntity): String? {
+    return try {
+        chatMessageJsonCodec.extractFunctionToolCallNames(message.rawJson).firstOrNull()
+    } catch (_: Exception) {
+        null
+    }
+}
+
+/**
  * 解析消息角色。
  */
 private fun getMessageRole(message: ChatMessageEntity): String {
@@ -579,7 +597,11 @@ fun MessageItem(
                 else -> MaterialTheme.colorScheme.secondaryContainer
             }, modifier = Modifier.widthIn(max = 300.dp)
         ) {
-            Column(modifier = Modifier.padding(8.dp)) {
+            Column(
+                modifier = Modifier
+                    .padding(8.dp)
+                    .animateContentSize()
+            ) {
                 Text(
                     text = when (role) {
                         "user" -> stringResource(R.string.you)
@@ -601,10 +623,15 @@ fun MessageItem(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
                     ) {
+                        val toolCallName = getToolCallName(message)
                         Text(
-                            text = stringResource(R.string.tool_calls),
+                            text = toolCallName?.let {
+                                stringResource(R.string.tool_call_with_name, it)
+                            } ?: stringResource(R.string.tool_calls),
                             style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
 
                         when (uiState) {
@@ -645,7 +672,9 @@ fun MessageItem(
                                     modifier = Modifier.height(28.dp)
                                 ) {
                                     Text(
-                                        if (expanded) stringResource(R.string.hide_results) else if (uiState == ToolExecutionUiState.COMPLETED) stringResource(R.string.expand_results) else stringResource(R.string.show_results),
+                                        if (expanded) stringResource(R.string.hide_results) else if (uiState == ToolExecutionUiState.COMPLETED) stringResource(
+                                            R.string.expand_results
+                                        ) else stringResource(R.string.show_results),
                                         fontSize = 11.sp
                                     )
                                 }
@@ -674,7 +703,10 @@ fun MessageItem(
                                 val resultContent = getDisplayContent(result) ?: ""
                                 Column(modifier = Modifier.padding(vertical = 4.dp)) {
                                     Text(
-                                        stringResource(R.string.tool_result_title, resultToolCallId ?: ""),
+                                        stringResource(
+                                            R.string.tool_result_title,
+                                            resultToolCallId ?: ""
+                                        ),
                                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp)
                                     )
                                     Text(
@@ -684,7 +716,9 @@ fun MessageItem(
                                 }
                             }
                         }
-                    } else if (uiState == ToolExecutionUiState.IDLE) {
+                    }
+
+                    if (uiState == ToolExecutionUiState.IDLE) {
                         Text(
                             stringResource(R.string.pending_tool_execution),
                             style = MaterialTheme.typography.bodySmall,
@@ -749,7 +783,10 @@ fun ChatInput(
                 CircularProgressIndicator(modifier = Modifier.size(24.dp))
             } else {
                 IconButton(onClick = sendCurrentMessage) {
-                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.content_desc_send))
+                    Icon(
+                        Icons.AutoMirrored.Filled.Send,
+                        contentDescription = stringResource(R.string.content_desc_send)
+                    )
                 }
             }
         }

@@ -24,6 +24,14 @@ interface PinnedToolDao {
     fun getAllPinnedTools(): Flow<List<PinnedToolEntity>>
 
     /**
+     * 一次性获取所有固定工具，按保存时间降序排列。
+     *
+     * @return 固定工具列表。
+     */
+    @Query("SELECT * FROM pinned_tools ORDER BY pinnedAt DESC")
+    suspend fun getAllPinnedToolsOnce(): List<PinnedToolEntity>
+
+    /**
      * 根据 ID 获取单个固定工具。
      *
      * @param id 固定工具的唯一 ID。

@@ -4,11 +4,13 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.core.app.ApplicationProvider
 import com.unscientificjszhai.mcpshortcuts.data.database.dao.ChatMessageDao
 import com.unscientificjszhai.mcpshortcuts.data.database.dao.ChatSessionDao
+import com.unscientificjszhai.mcpshortcuts.data.database.dao.PinnedToolDao
 import com.unscientificjszhai.mcpshortcuts.data.database.entity.ChatSessionEntity
 import com.unscientificjszhai.mcpshortcuts.data.openai.ChatMessageJsonCodec
 import com.unscientificjszhai.mcpshortcuts.data.openai.OpenAIRepository
 import com.unscientificjszhai.mcpshortcuts.mcp.McpConnectionManager
 import com.unscientificjszhai.mcpshortcuts.mcp.McpToolIntegrationHelper
+import com.unscientificjszhai.mcpshortcuts.mcp.PinnedToolChatHelper
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -51,6 +53,12 @@ class ChatViewModelIntegrationTest {
     @Inject
     lateinit var toolHelper: McpToolIntegrationHelper
 
+    @Inject
+    lateinit var pinnedToolDao: PinnedToolDao
+
+    @Inject
+    lateinit var pinnedToolChatHelper: PinnedToolChatHelper
+
     @Before
     fun init() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
@@ -68,7 +76,9 @@ class ChatViewModelIntegrationTest {
             openAIRepository,
             chatMessageJsonCodec,
             mcpConnectionManager,
-            toolHelper
+            toolHelper,
+            pinnedToolDao,
+            pinnedToolChatHelper
         )
     }
 

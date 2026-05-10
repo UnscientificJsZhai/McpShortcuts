@@ -66,6 +66,27 @@ class ChatMessageJsonCodecTest {
     }
 
     @Test
+    fun `extractFunctionToolCallNames should read names from raw json`() {
+        val rawJson = """
+            {
+              "role": "assistant",
+              "tool_calls": [
+                {
+                  "id": "call_1",
+                  "type": "function",
+                  "function": {
+                    "name": "very_long_test_tool_name",
+                    "arguments": "{}"
+                  }
+                }
+              ]
+            }
+        """.trimIndent()
+
+        assertEquals(listOf("very_long_test_tool_name"), codec.extractFunctionToolCallNames(rawJson))
+    }
+
+    @Test
     fun `toolMessageToRawJson should keep tool call id and display content`() {
         val rawJson = codec.toolMessageToRawJson("call_1", """{"success":true}""")
 

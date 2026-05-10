@@ -14,12 +14,14 @@ import com.openai.models.chat.completions.ChatCompletionMessageToolCall
 import com.unscientificjszhai.mcpshortcuts.R
 import com.unscientificjszhai.mcpshortcuts.data.database.dao.ChatMessageDao
 import com.unscientificjszhai.mcpshortcuts.data.database.dao.ChatSessionDao
+import com.unscientificjszhai.mcpshortcuts.data.database.dao.PinnedToolDao
 import com.unscientificjszhai.mcpshortcuts.data.database.entity.ChatMessageEntity
 import com.unscientificjszhai.mcpshortcuts.data.database.entity.ChatSessionEntity
 import com.unscientificjszhai.mcpshortcuts.data.openai.ChatMessageJsonCodec
 import com.unscientificjszhai.mcpshortcuts.data.openai.OpenAIRepository
 import com.unscientificjszhai.mcpshortcuts.mcp.McpConnectionManager
 import com.unscientificjszhai.mcpshortcuts.mcp.McpToolIntegrationHelper
+import com.unscientificjszhai.mcpshortcuts.mcp.PinnedToolChatHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
@@ -65,7 +67,9 @@ class ChatViewModel @Inject constructor(
     private val openAIRepository: OpenAIRepository,
     private val chatMessageJsonCodec: ChatMessageJsonCodec,
     private val mcpConnectionManager: McpConnectionManager,
-    private val toolHelper: McpToolIntegrationHelper
+    private val toolHelper: McpToolIntegrationHelper,
+    private val pinnedToolDao: PinnedToolDao,
+    private val pinnedToolChatHelper: PinnedToolChatHelper
 ) : ViewModel() {
 
     private val json = Json {
@@ -289,14 +293,27 @@ class ChatViewModel @Inject constructor(
             val history = messageDao.getMessagesBySessionId(sessionId).first()
             if (history.isEmpty()) return
 
+            val pinnedTools = pinnedToolDao.getAllPinnedToolsOnce()
+
             val openAIMessages = buildList {
-                getConfiguredSystemPrompt()?.let { prompt ->
+                val configuredPrompt = getConfiguredSystemPrompt()
+                val pinnedPrompt = pinnedToolChatHelper.buildPinnedToolsPrompt(pinnedTools)
+                val systemPrompt = listOfNotNull(configuredPrompt, pinnedPrompt)
+                    .joinToString("\n\n")
+                    .takeIf { it.isNotBlank() }
+
+                systemPrompt?.let { prompt ->
                     add(chatMessageJsonCodec.systemMessageToParam(prompt))
                 }
                 addAll(history.map { openAIRepository.toMessageParam(it) })
             }
 
-            val tools = toolHelper.getOpenAITools()
+            val tools = buildList {
+                addAll(toolHelper.getOpenAITools())
+                if (pinnedTools.isNotEmpty()) {
+                    add(pinnedToolChatHelper.getPinnedToolFunctionDefinition())
+                }
+            }
 
             val paramsBuilder = ChatCompletionCreateParams.builder()
                 .model(_selectedModel.value)
@@ -504,12 +521,23 @@ class ChatViewModel @Inject constructor(
     ): String {
         return try {
             val encodedName = function.function().name()
-            val decoded = toolHelper.decodeToolName(encodedName)
-                ?: throw IllegalArgumentException("Unknown tool: $encodedName")
-            val (serverId, toolName) = decoded
-            val arguments = toolHelper.decodeToolArguments(function.function().arguments())
-            val result = mcpConnectionManager.callTool(serverId, toolName, arguments)
-            formatToolResultForOpenAI(result)
+            if (encodedName == PinnedToolChatHelper.PINNED_TOOL_FUNCTION_NAME) {
+                val id = pinnedToolChatHelper.parsePinnedToolId(function.function().arguments())
+                    ?: throw IllegalArgumentException("Missing or invalid id in pinned tool call")
+                val pinned = pinnedToolDao.getPinnedToolById(id)
+                    ?: throw IllegalArgumentException("Saved pinned tool call not found: $id")
+
+                val arguments = toolHelper.decodeToolArguments(pinned.argumentsJson)
+                val result = mcpConnectionManager.callTool(pinned.serverId, pinned.toolName, arguments)
+                formatToolResultForOpenAI(result)
+            } else {
+                val decoded = toolHelper.decodeToolName(encodedName)
+                    ?: throw IllegalArgumentException("Unknown tool: $encodedName")
+                val (serverId, toolName) = decoded
+                val arguments = toolHelper.decodeToolArguments(function.function().arguments())
+                val result = mcpConnectionManager.callTool(serverId, toolName, arguments)
+                formatToolResultForOpenAI(result)
+            }
         } catch (e: Exception) {
             buildToolFailureContent(e)
         }

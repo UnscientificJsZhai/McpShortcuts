@@ -9,12 +9,14 @@ import com.openai.models.chat.completions.*
 import com.unscientificjszhai.mcpshortcuts.R
 import com.unscientificjszhai.mcpshortcuts.data.database.dao.ChatMessageDao
 import com.unscientificjszhai.mcpshortcuts.data.database.dao.ChatSessionDao
+import com.unscientificjszhai.mcpshortcuts.data.database.dao.PinnedToolDao
 import com.unscientificjszhai.mcpshortcuts.data.database.entity.ChatMessageEntity
 import com.unscientificjszhai.mcpshortcuts.data.database.entity.ChatSessionEntity
 import com.unscientificjszhai.mcpshortcuts.data.openai.ChatMessageJsonCodec
 import com.unscientificjszhai.mcpshortcuts.data.openai.OpenAIRepository
 import com.unscientificjszhai.mcpshortcuts.mcp.McpConnectionManager
 import com.unscientificjszhai.mcpshortcuts.mcp.McpToolIntegrationHelper
+import com.unscientificjszhai.mcpshortcuts.mcp.PinnedToolChatHelper
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import kotlinx.coroutines.Dispatchers
@@ -42,6 +44,8 @@ class ChatViewModelTest {
     private val chatMessageJsonCodec = ChatMessageJsonCodec()
     private val connectionManager: McpConnectionManager = mock()
     private val toolHelper: McpToolIntegrationHelper = mock()
+    private val pinnedToolDao: PinnedToolDao = mock()
+    private val pinnedToolChatHelper: PinnedToolChatHelper = mock()
     private val sharedPreferences: SharedPreferences = mock()
     private val testDispatcher = UnconfinedTestDispatcher()
 
@@ -61,6 +65,7 @@ class ChatViewModelTest {
         whenever(sessionDao.getAllSessions()).thenReturn(flowOf(emptyList()))
         whenever(messageDao.getMessagesBySessionId(any())).thenReturn(messagesFlow)
         runBlocking {
+            whenever(pinnedToolDao.getAllPinnedToolsOnce()).thenReturn(emptyList())
             whenever(toolHelper.getOpenAITools()).thenReturn(emptyList())
             whenever(messageDao.insertMessage(any())).thenAnswer { invocation ->
                 val msg = invocation.getArgument<ChatMessageEntity>(0)
@@ -76,7 +81,9 @@ class ChatViewModelTest {
             openAIRepository,
             chatMessageJsonCodec,
             connectionManager,
-            toolHelper
+            toolHelper,
+            pinnedToolDao,
+            pinnedToolChatHelper
         )
     }
 
@@ -182,7 +189,9 @@ class ChatViewModelTest {
             openAIRepository,
             chatMessageJsonCodec,
             connectionManager,
-            toolHelper
+            toolHelper,
+            pinnedToolDao,
+            pinnedToolChatHelper
         )
 
         scopedViewModel.selectSession(1L)

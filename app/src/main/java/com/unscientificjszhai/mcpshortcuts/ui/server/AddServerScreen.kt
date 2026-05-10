@@ -41,8 +41,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.unscientificjszhai.mcpshortcuts.R
 
-// ... (other imports)
-
 /**
  * 添加或编辑服务器屏幕的 Compose 实现。
  *

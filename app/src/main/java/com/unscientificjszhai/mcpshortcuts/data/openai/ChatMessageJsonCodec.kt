@@ -165,6 +165,26 @@ class ChatMessageJsonCodec @Inject constructor() {
     }
 
     /**
+     * 从 assistant 消息原始 JSON 中提取函数工具名称。
+     *
+     * @param rawJson 数据库中保存的原始 JSON。
+     * @return 函数工具名称列表。
+     */
+    fun extractFunctionToolCallNames(rawJson: String): List<String> {
+        val node = readTree(rawJson)
+        return node.path("tool_calls")
+            .takeIf { it.isArray }
+            ?.mapNotNull { toolCall ->
+                toolCall.path("function")
+                    .get("name")
+                    ?.takeIf { name -> name.isTextual }
+                    ?.asText()
+                    ?.takeIf { name -> name.isNotBlank() }
+            }
+            ?: emptyList()
+    }
+
+    /**
      * 从 tool 消息原始 JSON 中提取对应的工具调用 ID。
      *
      * @param rawJson 数据库中保存的原始 JSON。

@@ -115,6 +115,7 @@
     <string name="you">You</string>
     <string name="ai">AI</string>
     <string name="tool_calls">Tool Calls</string>
+    <string name="tool_call_with_name">Tool Call: %1$s</string>
     <string name="execute">Execute</string>
     <string name="executing">Executing...</string>
     <string name="hide_results">Hide Results</string>
