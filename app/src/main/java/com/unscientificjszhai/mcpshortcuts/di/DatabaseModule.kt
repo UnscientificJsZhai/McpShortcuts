@@ -28,7 +28,6 @@ object DatabaseModule {
             McpDatabase::class.java,
             "mcp_shortcuts.db"
         )
-            .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
     }
 

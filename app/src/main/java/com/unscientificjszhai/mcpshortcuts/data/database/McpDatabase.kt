@@ -28,7 +28,7 @@ import com.unscientificjszhai.mcpshortcuts.data.database.entity.ToolCallHistoryE
         ChatSessionEntity::class,
         ChatMessageEntity::class
     ],
-    version = 5,
+    version = 1,
     exportSchema = false
 )
 abstract class McpDatabase : RoomDatabase() {
