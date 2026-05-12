@@ -6,6 +6,14 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization") version "2.3.20"
 }
 
+val releaseSigningVariables = listOf(
+    "ANDROID_KEYSTORE_FILE",
+    "ANDROID_KEYSTORE_PASSWORD",
+    "ANDROID_KEY_ALIAS",
+    "ANDROID_KEY_PASSWORD"
+)
+val hasReleaseSigningConfig = releaseSigningVariables.all { !System.getenv(it).isNullOrBlank() }
+
 android {
     namespace = "com.unscientificjszhai.mcpshortcuts"
     compileSdk {
@@ -24,8 +32,22 @@ android {
         testInstrumentationRunner = "com.unscientificjszhai.mcpshortcuts.HiltTestRunner"
     }
 
+    if (hasReleaseSigningConfig) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(System.getenv("ANDROID_KEYSTORE_FILE"))
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (hasReleaseSigningConfig) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
