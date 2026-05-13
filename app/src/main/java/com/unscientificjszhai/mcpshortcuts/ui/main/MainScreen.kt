@@ -46,6 +46,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -58,9 +59,11 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.preference.PreferenceManager
 import com.unscientificjszhai.mcpshortcuts.R
@@ -73,11 +76,9 @@ import com.unscientificjszhai.mcpshortcuts.ui.chat.ChatActivity
 import com.unscientificjszhai.mcpshortcuts.ui.history.ToolCallHistoryActivity
 import com.unscientificjszhai.mcpshortcuts.ui.server.AddServerActivity
 import com.unscientificjszhai.mcpshortcuts.ui.settings.SettingsActivity
-import com.unscientificjszhai.mcpshortcuts.ui.theme.CustomAppTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
 
 /**
  * 主屏幕的 Compose 实现。
@@ -88,6 +89,7 @@ import java.util.Locale
 @Composable
 fun MainScreen(viewModel: MainActivityViewModel = viewModel()) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val serversWithTools by viewModel.serversWithTools.collectAsState()
     val recentHistory by viewModel.recentHistory.collectAsState()
     val pinnedTools by viewModel.pinnedTools.collectAsState()
@@ -101,10 +103,18 @@ fun MainScreen(viewModel: MainActivityViewModel = viewModel()) {
         )
     }
 
-    // 当从设置返回时刷新 aiEnabled
-    LaunchedEffect(Unit) {
-        aiEnabled = PreferenceManager.getDefaultSharedPreferences(context)
-            .getBoolean("enable_ai_features", false)
+    DisposableEffect(lifecycleOwner, context) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                aiEnabled = PreferenceManager.getDefaultSharedPreferences(context)
+                    .getBoolean("enable_ai_features", false)
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     Scaffold(
@@ -149,23 +159,20 @@ fun MainScreen(viewModel: MainActivityViewModel = viewModel()) {
             }
         } else {
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = innerPadding
+                modifier = Modifier.fillMaxSize(), contentPadding = innerPadding
             ) {
                 // ————— AI 聊天 section —————
                 if (aiEnabled) {
                     item(key = "header_ai") {
                         SectionHeader(
-                            title = stringResource(R.string.ai_chat),
-                            icon = {
+                            title = stringResource(R.string.ai_chat), icon = {
                                 Icon(
                                     Icons.AutoMirrored.Filled.Chat,
                                     contentDescription = null,
                                     modifier = Modifier.size(16.dp),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
-                            }
-                        )
+                            })
                     }
                     item(key = "ai_chat_button") {
                         Card(
@@ -174,8 +181,7 @@ fun MainScreen(viewModel: MainActivityViewModel = viewModel()) {
                                 .padding(horizontal = 16.dp, vertical = 4.dp)
                                 .clickable {
                                     context.startActivity(Intent(context, ChatActivity::class.java))
-                                },
-                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                                }, elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                         ) {
                             Row(
                                 modifier = Modifier
@@ -202,23 +208,20 @@ fun MainScreen(viewModel: MainActivityViewModel = viewModel()) {
                 if (pinnedTools.isNotEmpty()) {
                     item(key = "header_pinned") {
                         SectionHeader(
-                            title = stringResource(R.string.header_pinned),
-                            icon = {
+                            title = stringResource(R.string.header_pinned), icon = {
                                 Icon(
                                     Icons.Default.Star,
                                     contentDescription = null,
                                     modifier = Modifier.size(16.dp),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
-                            }
-                        )
+                            })
                     }
                     items(pinnedTools, key = { "pinned_${it.id}" }) { pinned ->
                         PinnedToolItem(
                             pinned = pinned,
                             onCallClick = { viewModel.callPinnedTool(pinned) },
-                            onDeleteClick = { viewModel.deletePinnedTool(pinned) }
-                        )
+                            onDeleteClick = { viewModel.deletePinnedTool(pinned) })
                     }
                 }
 
@@ -226,65 +229,58 @@ fun MainScreen(viewModel: MainActivityViewModel = viewModel()) {
                 if (recentHistory.isNotEmpty()) {
                     item(key = "header_recent") {
                         SectionHeader(
-                            title = stringResource(R.string.header_recent),
-                            icon = {
+                            title = stringResource(R.string.header_recent), icon = {
                                 Icon(
                                     Icons.Default.DateRange,
                                     contentDescription = null,
                                     modifier = Modifier.size(16.dp),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
-                            }
-                        )
+                            })
                     }
                     items(recentHistory, key = { "history_${it.id}" }) { record ->
-                        HistoryItem(
-                            history = record,
-                            innerPadding = innerPadding,
-                            onClick = {
-                                val intent = Intent(context, ToolCallHistoryActivity::class.java)
-                                    .apply { putExtra("historyId", record.id) }
-                                context.startActivity(intent)
-                            },
-                            onDeleteClick = { viewModel.deleteHistory(record) }
-                        )
+                        HistoryItem(history = record, innerPadding = innerPadding, onClick = {
+                            val intent = Intent(
+                                context, ToolCallHistoryActivity::class.java
+                            ).apply { putExtra("historyId", record.id) }
+                            context.startActivity(intent)
+                        }, onDeleteClick = { viewModel.deleteHistory(record) })
                     }
                 }
 
                 // ————— 所有工具 section —————
-                item(key = "header_all") {
-                    SectionHeader(
-                        title = stringResource(R.string.header_all),
-                        icon = {
-                            Icon(
-                                Icons.AutoMirrored.Filled.List,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    )
-                }
-                items(serversWithTools, key = { "server_${it.server.id}" }) { item ->
-                    ServerItem(
-                        item = item,
-                        onRetry = { viewModel.retryConnect(item.server) },
-                        onUpdateTools = { viewModel.updateTools(item.server.id) },
-                        onToolClick = { tool ->
-                            val intent = Intent(context, CallToolActivity::class.java).apply {
-                                putExtra("serverId", item.server.id)
-                                putExtra("toolName", tool.name)
-                            }
-                            context.startActivity(intent)
-                        },
-                        onEditClick = {
-                            val intent = Intent(context, AddServerActivity::class.java).apply {
-                                putExtra("serverId", item.server.id)
-                            }
-                            context.startActivity(intent)
-                        },
-                        onDeleteClick = { viewModel.deleteServer(item.server) }
-                    )
+                if (serversWithTools.isNotEmpty()) {
+                    item(key = "header_all") {
+                        SectionHeader(
+                            title = stringResource(R.string.header_all), icon = {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.List,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            })
+                    }
+                    items(serversWithTools, key = { "server_${it.server.id}" }) { item ->
+                        ServerItem(
+                            item = item,
+                            onRetry = { viewModel.retryConnect(item.server) },
+                            onUpdateTools = { viewModel.updateTools(item.server.id) },
+                            onToolClick = { tool ->
+                                val intent = Intent(context, CallToolActivity::class.java).apply {
+                                    putExtra("serverId", item.server.id)
+                                    putExtra("toolName", tool.name)
+                                }
+                                context.startActivity(intent)
+                            },
+                            onEditClick = {
+                                val intent = Intent(context, AddServerActivity::class.java).apply {
+                                    putExtra("serverId", item.server.id)
+                                }
+                                context.startActivity(intent)
+                            },
+                            onDeleteClick = { viewModel.deleteServer(item.server) })
+                    }
                 }
             }
         }
@@ -301,8 +297,7 @@ fun MainScreen(viewModel: MainActivityViewModel = viewModel()) {
                         CircularProgressIndicator()
                     }
                 },
-                confirmButton = { }
-            )
+                confirmButton = { })
         }
 
         is ToolCallState.Success -> {
@@ -314,8 +309,7 @@ fun MainScreen(viewModel: MainActivityViewModel = viewModel()) {
                     TextButton(onClick = { viewModel.clearToolCallState() }) {
                         Text(stringResource(R.string.ok))
                     }
-                }
-            )
+                })
         }
 
         is ToolCallState.Error -> {
@@ -327,17 +321,14 @@ fun MainScreen(viewModel: MainActivityViewModel = viewModel()) {
                     TextButton(onClick = { viewModel.clearToolCallState() }) {
                         Text(stringResource(R.string.ok))
                     }
-                }
-            )
+                })
         }
 
         is ToolCallState.SilentSuccess -> {
             val successMessage = stringResource(R.string.call_success)
             LaunchedEffect(state) {
                 android.widget.Toast.makeText(
-                    context,
-                    successMessage,
-                    android.widget.Toast.LENGTH_SHORT
+                    context, successMessage, android.widget.Toast.LENGTH_SHORT
                 ).show()
                 viewModel.clearToolCallState()
             }
@@ -346,9 +337,7 @@ fun MainScreen(viewModel: MainActivityViewModel = viewModel()) {
         is ToolCallState.SilentError -> {
             LaunchedEffect(state) {
                 android.widget.Toast.makeText(
-                    context,
-                    state.message,
-                    android.widget.Toast.LENGTH_SHORT
+                    context, state.message, android.widget.Toast.LENGTH_SHORT
                 ).show()
                 viewModel.clearToolCallState()
             }
@@ -367,8 +356,7 @@ fun MainScreen(viewModel: MainActivityViewModel = viewModel()) {
  */
 @Composable
 fun SectionHeader(
-    title: String,
-    icon: @Composable (() -> Unit)? = null
+    title: String, icon: @Composable (() -> Unit)? = null
 ) {
     Row(
         modifier = Modifier
@@ -396,9 +384,7 @@ fun SectionHeader(
  */
 @Composable
 fun PinnedToolItem(
-    pinned: PinnedToolEntity,
-    onCallClick: () -> Unit,
-    onDeleteClick: () -> Unit
+    pinned: PinnedToolEntity, onCallClick: () -> Unit, onDeleteClick: () -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -407,9 +393,7 @@ fun PinnedToolItem(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp)
             .combinedClickable(
-                onClick = onCallClick,
-                onLongClick = { showDeleteDialog = true }
-            ),
+                onClick = onCallClick, onLongClick = { showDeleteDialog = true }),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
@@ -458,8 +442,7 @@ fun PinnedToolItem(
                 TextButton(onClick = { showDeleteDialog = false }) {
                     Text(stringResource(R.string.cancel))
                 }
-            }
-        )
+            })
     }
 }
 
@@ -496,8 +479,7 @@ fun HistoryItem(
                             if (down != null) {
                                 innerPadding?.calculateTopPadding()?.let { top ->
                                     pressOffset = DpOffset(
-                                        down.position.x.toDp(),
-                                        down.position.y.toDp() - top + 16.dp
+                                        down.position.x.toDp(), down.position.y.toDp() - top + 16.dp
                                     )
                                 }
                             }
@@ -506,9 +488,7 @@ fun HistoryItem(
                 }
                 .padding(horizontal = 16.dp, vertical = 4.dp)
                 .combinedClickable(
-                    onClick = onClick,
-                    onLongClick = { showMenu = true }
-                ),
+                    onClick = onClick, onLongClick = { showMenu = true }),
             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
             Row(
@@ -538,24 +518,17 @@ fun HistoryItem(
         }
 
         DropdownMenu(
-            expanded = showMenu,
-            offset = pressOffset,
-            onDismissRequest = { showMenu = false }
-        ) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.delete_record)) },
-                onClick = {
-                    showMenu = false
-                    onDeleteClick()
-                },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = stringResource(R.string.delete_record),
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                }
-            )
+            expanded = showMenu, offset = pressOffset, onDismissRequest = { showMenu = false }) {
+            DropdownMenuItem(text = { Text(stringResource(R.string.delete_record)) }, onClick = {
+                showMenu = false
+                onDeleteClick()
+            }, leadingIcon = {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = stringResource(R.string.delete_record),
+                    tint = MaterialTheme.colorScheme.error
+                )
+            })
         }
     }
 }
@@ -637,8 +610,7 @@ fun ServerItem(
 
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
+                        modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End
                     ) {
                         TextButton(onClick = onEditClick) {
                             Text(stringResource(R.string.edit))
@@ -662,8 +634,7 @@ fun ServerItem(
             text = {
                 Text(
                     stringResource(
-                        R.string.delete_server_confirm_message,
-                        item.server.name
+                        R.string.delete_server_confirm_message, item.server.name
                     )
                 )
             },
@@ -679,8 +650,7 @@ fun ServerItem(
                 TextButton(onClick = { showDeleteDialog = false }) {
                     Text(stringResource(R.string.cancel))
                 }
-            }
-        )
+            })
     }
 }
 
@@ -693,22 +663,19 @@ fun ServerItem(
  */
 @Composable
 fun ToolItem(tool: ToolCacheEntity, onClick: () -> Unit, enabled: Boolean) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = enabled) { onClick() }
-            .padding(vertical = 8.dp)) {
+    Column(modifier = Modifier
+        .fillMaxWidth()
+        .clickable(enabled = enabled) { onClick() }
+        .padding(vertical = 8.dp)) {
         Text(
-            text = tool.name,
-            style = MaterialTheme.typography.titleMedium,
+            text = tool.name, style = MaterialTheme.typography.titleMedium,
             // 禁用状态使用半透明颜色以适配深色/浅色模式
             color = if (enabled) MaterialTheme.colorScheme.onSurface
             else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
         )
         tool.description?.let {
             Text(
-                text = it,
-                style = MaterialTheme.typography.bodyMedium,
+                text = it, style = MaterialTheme.typography.bodyMedium,
                 // 使用 onSurface 带透明度替代硬编码 Color.Gray
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
@@ -756,13 +723,5 @@ fun StatusIndicator(state: McpClientState, onRetry: () -> Unit) {
                 Text(stringResource(R.string.connect))
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun MainScreenPreview() {
-    CustomAppTheme {
-        // 预览占位
     }
 }
