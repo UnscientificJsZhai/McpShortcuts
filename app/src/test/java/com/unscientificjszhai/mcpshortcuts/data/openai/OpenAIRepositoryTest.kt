@@ -1,13 +1,20 @@
 package com.unscientificjszhai.mcpshortcuts.data.openai
 
 import android.content.Context
+import com.openai.core.RequestOptions
 import com.openai.core.jsonMapper
+import com.openai.core.http.HttpClient
+import com.openai.core.http.HttpMethod
+import com.openai.core.http.HttpRequest
+import com.openai.core.http.HttpResponse
 import com.unscientificjszhai.mcpshortcuts.data.database.entity.ChatMessageEntity
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.mock
+import java.util.concurrent.CompletableFuture
 
 class OpenAIRepositoryTest {
 
@@ -113,5 +120,42 @@ class OpenAIRepositoryTest {
 
         assertTrue(toolParam.content().toString().contains("Success"))
         assertEquals("call_1", toolParam.toolCallId())
+    }
+
+    @Test
+    fun `NoAuthHeaderHttpClient should remove authorization header`() {
+        val delegate = CapturingHttpClient()
+        val client = NoAuthHeaderHttpClient(delegate)
+        val request = HttpRequest.builder()
+            .method(HttpMethod.GET)
+            .baseUrl("https://example.com/v1")
+            .replaceHeaders("Authorization", "Bearer placeholder")
+            .replaceHeaders("X-Test", "enabled")
+            .build()
+
+        client.execute(request)
+
+        val capturedHeaders = delegate.capturedRequest!!.headers
+        assertFalse(capturedHeaders.names().contains("Authorization"))
+        assertEquals(listOf("enabled"), capturedHeaders.values("X-Test"))
+    }
+
+    private class CapturingHttpClient : HttpClient {
+        var capturedRequest: HttpRequest? = null
+
+        override fun execute(request: HttpRequest, requestOptions: RequestOptions): HttpResponse {
+            capturedRequest = request
+            return mock()
+        }
+
+        override fun executeAsync(
+            request: HttpRequest,
+            requestOptions: RequestOptions
+        ): CompletableFuture<HttpResponse> {
+            capturedRequest = request
+            return CompletableFuture.completedFuture(mock())
+        }
+
+        override fun close() = Unit
     }
 }

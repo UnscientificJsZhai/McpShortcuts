@@ -3,7 +3,13 @@ package com.unscientificjszhai.mcpshortcuts.data.openai
 import android.content.Context
 import androidx.preference.PreferenceManager
 import com.openai.client.OpenAIClient
-import com.openai.client.okhttp.OpenAIOkHttpClient
+import com.openai.client.OpenAIClientImpl
+import com.openai.client.okhttp.OkHttpClient
+import com.openai.core.ClientOptions
+import com.openai.core.RequestOptions
+import com.openai.core.http.HttpClient
+import com.openai.core.http.HttpRequest
+import com.openai.core.http.HttpResponse
 import com.openai.models.chat.completions.ChatCompletion
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import com.openai.models.chat.completions.ChatCompletionMessageParam
@@ -13,6 +19,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import java.util.concurrent.CompletableFuture
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,6 +31,12 @@ class OpenAIRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val chatMessageJsonCodec: ChatMessageJsonCodec
 ) {
+    private companion object {
+        private const val AUTHORIZATION_HEADER = "Authorization"
+        private const val BEARER_PREFIX = "Bearer "
+        private const val NO_AUTH_PLACEHOLDER_API_KEY = "mcp-shortcuts-no-auth-placeholder"
+    }
+
     private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
@@ -168,9 +181,34 @@ class OpenAIRepository @Inject constructor(
      */
     private fun createClient(baseUrl: String): OpenAIClient {
         val headers = getApiHeaders()
-        val apiKey = headers["Authorization"]?.removePrefix("Bearer ") ?: ""
+        val authorization = findHeaderValue(headers, AUTHORIZATION_HEADER)
+        val apiKey = authorization?.removePrefix(BEARER_PREFIX)?.trim()
+        val httpClient = OkHttpClient.builder().build().let { client ->
+            if (authorization.isNullOrBlank()) NoAuthHeaderHttpClient(client) else client
+        }
+        val clientOptions = ClientOptions.builder()
+            .httpClient(httpClient)
+            .baseUrl(baseUrl)
+            .apiKey(apiKey.takeUnless { it.isNullOrBlank() } ?: NO_AUTH_PLACEHOLDER_API_KEY)
+            .apply {
+                headers
+                    .filterKeys { !it.equals(AUTHORIZATION_HEADER, ignoreCase = true) }
+                    .forEach { (name, value) -> putHeader(name, value) }
+            }
+            .build()
 
-        return OpenAIOkHttpClient.builder().baseUrl(baseUrl).apiKey(apiKey).build()
+        return OpenAIClientImpl(clientOptions)
+    }
+
+    /**
+     * 按忽略大小写的方式查找请求头值。
+     *
+     * @param headers 请求头映射。
+     * @param name 请求头名称。
+     * @return 匹配到的请求头值，未匹配时返回 null。
+     */
+    private fun findHeaderValue(headers: Map<String, String>, name: String): String? {
+        return headers.entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
     }
 
     /**
@@ -206,5 +244,38 @@ class OpenAIRepository @Inject constructor(
             e.printStackTrace()
             emptyList()
         }
+    }
+}
+
+/**
+ * 在未配置 API Key 时移除 SDK 为通过本地校验而注入的 Authorization 请求头。
+ *
+ * @property delegate 实际执行 HTTP 请求的客户端。
+ */
+internal class NoAuthHeaderHttpClient(
+    private val delegate: HttpClient
+) : HttpClient {
+    override fun execute(request: HttpRequest, requestOptions: RequestOptions): HttpResponse {
+        return delegate.execute(request.withoutAuthorizationHeader(), requestOptions)
+    }
+
+    override fun executeAsync(
+        request: HttpRequest,
+        requestOptions: RequestOptions
+    ): CompletableFuture<HttpResponse> {
+        return delegate.executeAsync(request.withoutAuthorizationHeader(), requestOptions)
+    }
+
+    override fun close() {
+        delegate.close()
+    }
+
+    /**
+     * 创建移除 Authorization 后的请求副本。
+     *
+     * @return 不包含 Authorization 请求头的请求。
+     */
+    private fun HttpRequest.withoutAuthorizationHeader(): HttpRequest {
+        return toBuilder().removeHeaders("Authorization").build()
     }
 }
